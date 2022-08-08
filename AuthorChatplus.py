@@ -73,7 +73,7 @@ logger = logging.getLogger(__name__)
 version = f"v{__version__[0]}.{__version__[1]}.{__version__[2]}stable"
 ver = f"<i>AuthorChat + version {version}</i>"
 
-FLOOD_TIMEOUT = 0.8
+FLOOD_TIMEOUT = 3
 FLOOD_TRESHOLD = 4
 
 
@@ -2017,7 +2017,7 @@ Do not remove hikarichat.   """
                 ver,
                 "✅ Connected"
                 if self.api._connected
-                else ("🔁 Connecting..." if self.api._inited else "🗃 Local"),
+                else ("🔁 Connecting..." if self.api._inited else "⭐️ Full by @vadym_yem"),
             ),
         )
 
@@ -4810,9 +4810,9 @@ Do not remove hikarichat.   """
 
         # We can override class docstings because of abc meta
         self.__doc__ = (
-            "Advanced chat admin toolkit\nNow became free...\n\n💻 Developer: t.me/authorche\n📣 Downloaded from: @vadym_yem\n\n"
+            "Advanced chat admin toolkit\nAdvanced chat admin toolkit. Plus version for hikarichat (report open). For unlock report '.report on' !!!Do not remove hikarichat.\n\n💻 Developer: t.me/authorche\n📣 Downloaded from: @vadym_yem\n\n"
             + f"📦Version: {version}\n"
-            + ("🗃 Local" if not self.api._inited else "⭐️ Full")
+            + ("⭐️ Full by @vadym_yem" if not self.api._inited else "⭐️ Full")
         )
 
         self._pt_task = asyncio.ensure_future(self._global_queue_handler())
