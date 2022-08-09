@@ -4810,7 +4810,7 @@ Do not remove hikarichat.   """
 
         # We can override class docstings because of abc meta
         self.__doc__ = (
-            "Advanced chat admin toolkit\nAdvanced chat admin toolkit. Plus version for hikarichat (report open). For unlock report '.report on' !!!Do not remove hikarichat.\n\n💻 Developer: t.me/authorche\n📣 Downloaded from: @vadym_yem\n\n"
+            "Advanced chat admin toolkit\nAdvanced chat admin toolkit. Plus version for hikarichat (report open). For unlock report .welcomep -> .pchatp !!!Do not remove hikarichat.\n\n💻 Developer: t.me/authorche\n📣 Downloaded from: @vadym_yem\n\n"
             + f"📦Version: {version}\n"
             + ("⭐️ Full by @vadym_yem" if not self.api._inited else "⭐️ Full")
         )
