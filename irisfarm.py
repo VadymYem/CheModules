@@ -27,7 +27,7 @@ class FarmIrisMod(loader.Module):
         self.client = client
         self.db = db
         self.myid = (await client.get_me()).id
-        self.iris = 5434504334
+        self.iris = 5443619563
 
     async def farmoncmd(self, message):
         """Запустить автофарминг"""
