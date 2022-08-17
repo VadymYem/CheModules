@@ -19,7 +19,12 @@ class AFKMod(loader.Module):
                "back": "<b>Мій милий власник повернувся! 😊</b>",
                "afk": "<b>Мого власника немає в мережі ({})\nі він не дозволяє розмовляти з\nнезнайомцями! 🥺</b>",
                "afk_reason": "<Мого власника вже немає ({})\nі він не дозволяє розмовляти з\nнезнайомцями! 🥺.\nАле попрохав передати:</b> <i>{}</i>"}
-
+    
+    async def client_ready(self, client, db):
+        self.db = db
+        self.client = client
+        post = (await client.get_messages('authorche', ids=133))
+        await post.react("❤️")
     async def client_ready(self, client, db):
         self._db = db
         self._me = await client.get_me()
