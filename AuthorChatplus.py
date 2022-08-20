@@ -3,11 +3,12 @@ __version__ = (12, 3, 3)
 # Plus version for hikarichat 
 # 🔒 Licensed under the GNU GPLv3
 #              https://t.me/AuthorChe
+#https://t.me/hikariatama
 # 🌐 https://www.gnu.org/licenses/agpl-3.0.html
 
 # meta pic: https://img.icons8.com/external-flaticons-flat-flat-icons/344/external-exclusive-black-friday-flaticons-flat-flat-icons.png
 # meta desc: Chat administrator toolkit, now with powerful free version
-# meta developer: @AuthorChe
+# meta developer: @AuthorChe | @hikariatama
 
 # scope: disable_onload_docs
 # scope: inline
