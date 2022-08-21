@@ -68,7 +68,7 @@ class FeedbackBotMod(loader.Module):
         self.__doc__ = "Module from add feedback bot 👨‍💻\n\n" \
         "📝 Dev: @Vadym_Yem\n" \
         "📥 Source: @Vadym_Yem" \
-        f"🔗 Feedback link: t.me/{self.inline.bot_username}?start=feedback\n\n" \
+        f"🏔 Feedback command: /feedback\n\n" \
         
 
     async def on_unload(self):
