@@ -67,7 +67,7 @@ class FeedbackBotMod(loader.Module):
 
         self.__doc__ = "Module from add feedback bot 👨‍💻\n\n" \
         "📝 Dev: @Vadym_Yem\n" \
-        "📥 Source: @Vadym_Yem" \
+        "📥 Source: @Vadym_Yem\n" \
         f"🏔 Feedback command: /feedback\n\n" \
         
 
