@@ -71,8 +71,6 @@ class FeedbackBotMod(loader.Module):
         f"🏔 Feedback command: /feedback\n\n" \
         
 
-    async def on_unload(self):
-        await self.save_stat("unload")
 
     async def aiogram_watcher(self, message: AiogramMessage):
         if message.text == "/feedback":
