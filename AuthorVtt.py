@@ -14,7 +14,7 @@ from .. import loader
 
 @loader.tds
 class AuthorVttMod(loader.Module):
-    """Распознавание речи через Google Recognition API(ua,pl,en,ru,de)"""
+    """Распознавание речи через Google Recognition API(ua,en)"""
 
     strings = {"name": "Author's Voice-to-text(vtt)", "pref": "<b>[Authot's VTT]</b> "}
 
@@ -38,7 +38,7 @@ class AuthorVttMod(loader.Module):
                 audio_content = recog.record(audio_file)
             await m.edit(
                 self.strings["pref"]
-                + recog.recognize_google(audio_content, language="de-DE" and "ru-RU" and "en-EN" and "uk-UK" and "pl-PL")
+                + recog.recognize_google(audio_content, language="en-EN" and "uk-UK")
             )
         else:
             await m.edit(self.strings["pref"] + "reply to audio/voice...")
