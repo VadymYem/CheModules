@@ -38,7 +38,7 @@ class AuthorVttMod(loader.Module):
                 audio_content = recog.record(audio_file)
             await m.edit(
                 self.strings["pref"]
-                + recog.recognize_google(audio_content, language="uk-UK")
+                + recog.recognize_google(audio_content, language="uk-UK" and "ua-UA")
             )
         else:
             await m.edit(self.strings["pref"] + "reply to audio/voice...")
