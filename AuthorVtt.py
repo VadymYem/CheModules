@@ -14,7 +14,7 @@ from .. import loader
 
 @loader.tds
 class AuthorVttMod(loader.Module):
-    """Распознавание речи через Google Recognition API(ua,en)"""
+    """Роспізнавання голосу через Google Recognition API(ua,en)"""
 
     strings = {"name": "Author's Voice-to-text(vtt)", "pref": "<b>[Authot's VTT]</b> "}
 
