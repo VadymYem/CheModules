@@ -12,17 +12,17 @@ from telethon.tl.patched import Message
 logger = logging.getLogger(__name__)
 
 
-class NoLinksMod(loader.Module):
-    strings = {"name": "🔗AntiURL"}
+class AntiUrlMod(loader.Module):
+    strings = {"name": "AntiURL"}
 
     async def linkcmd(self, message):
-        string = "Настройка для этого чата"
+        string = "AntiURL are..."
         await self.inline.form(
             message=message,
             text=string,
             reply_markup=[
                 {
-                    "text": "Добавить",
+                    "text": "Off",
                     "callback": self.chat__callback,
                     "args": (
                         True,
@@ -33,7 +33,7 @@ class NoLinksMod(loader.Module):
             if message.chat.id not in self.chats
             else [
                 {
-                    "text": "Убрать",
+                    "text": "On",
                     "callback": self.chat__callback,
                     "args": (
                         False,
@@ -60,10 +60,10 @@ class NoLinksMod(loader.Module):
 
         self._db.set(self.strings["name"], "chats", self.chats)
         await call.edit(
-            text="Настройка для этого чата",
+            text="AntiURL are...",
             reply_markup=[
                 {
-                    "text": "Добавить",
+                    "text": "Off",
                     "callback": self.chat__callback,
                     "args": (
                         True,
@@ -74,7 +74,7 @@ class NoLinksMod(loader.Module):
             if id_ not in self.chats
             else [
                 {
-                    "text": "Убрать",
+                    "text": "On",
                     "callback": self.chat__callback,
                     "args": (
                         False,
