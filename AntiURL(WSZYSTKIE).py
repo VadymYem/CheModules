@@ -12,17 +12,18 @@ from telethon.tl.patched import Message
 logger = logging.getLogger(__name__)
 
 
-class AntiUrlMod(loader.Module):
-    strings = {"name": "AntiURL"}
+class AntiURLMod(loader.Module):
+    strings = {"name": "AntiURL", "settings": "AntiURL are:", "add": "off", "remove": "On"}
+    strings_ru = {"name": "AntiURL", "settings": "AntiURL are:", "add": "off", "remove": "On"}
 
     async def linkcmd(self, message):
-        string = "AntiURL are..."
+        """Configuration for chat"""
         await self.inline.form(
             message=message,
-            text=string,
+            text=self.strings["settings"],
             reply_markup=[
                 {
-                    "text": "Off",
+                    "text": self.strings["add"],
                     "callback": self.chat__callback,
                     "args": (
                         True,
@@ -33,7 +34,7 @@ class AntiUrlMod(loader.Module):
             if message.chat.id not in self.chats
             else [
                 {
-                    "text": "On",
+                    "text": self.strings["remove"],
                     "callback": self.chat__callback,
                     "args": (
                         False,
@@ -60,10 +61,10 @@ class AntiUrlMod(loader.Module):
 
         self._db.set(self.strings["name"], "chats", self.chats)
         await call.edit(
-            text="AntiURL are...",
+            text=self.strings["settings"],
             reply_markup=[
                 {
-                    "text": "Off",
+                    "text": self.strings["add"],
                     "callback": self.chat__callback,
                     "args": (
                         True,
@@ -74,7 +75,7 @@ class AntiUrlMod(loader.Module):
             if id_ not in self.chats
             else [
                 {
-                    "text": "On",
+                    "text": self.strings["remove"],
                     "callback": self.chat__callback,
                     "args": (
                         False,
@@ -87,9 +88,9 @@ class AntiUrlMod(loader.Module):
     async def watcher(self, message):
         if getattr(message, "sender_id", None) != self._client._tg_id and bool(
             re.findall(
-                r"""(?i)\b((?:https?://|t.me/|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""",
+                r"""(?i)\b((?:https?://|t.me|rt|www\d{0,3}[.]|[a-z0-9.\-]+[.][a-z]{2,4}/)(?:[^\s()<>]+|\(([^\s()<>]+|(\([^\s()<>]+\)))*\))+(?:\(([^\s()<>]+|(\([^\s()<>]+\)))*\)|[^\s`!()\[\]{};:'".,<>?«»“”‘’]))""",
                 message.text,
             )
             and message.chat.id in self.chats
         ):
-            await message.delete()
+            await message.delete() 
