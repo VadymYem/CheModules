@@ -1,5 +1,5 @@
 
-# meta developer
+# meta developer: @AuthorChe 
 
 import random
 from .. import loader, utils
@@ -10,7 +10,7 @@ from telethon.tl.types import Message
 
 @loader.tds
 class FarmIrisMod(loader.Module):
-    """Для автоматического фарминга коинов в ирисботе(moon_dyla)"""
+    """Для автоматического фарминга коинов в ирисботе(iris_black)"""
 
     strings = {
         "name": "farmiris",
