@@ -34,7 +34,7 @@ class IPCheckerMod(loader.Module):
             else:
                 pass
             if response.json()['status'] == 'fail':
-                await message.edit(f"<b>[Ошибка] Информация по этому IP не может быть найдена.\nДанные об ошибке: </b>" + f"<code>{response.json()['message']}</code>")
+                await message.edit(f"<b>[Помилка] Інформація по цьому IP не може бути знайдена.\nДані про помилку: </b>" + f"<code>{response.json()['message']}</code>")
                 return
             else:
                 await message.edit("Інформація по IP: " + f"<code>{str(response.json()['query'])}</code>" +"\nСтрана: " + f"<code>{str(response.json()['country'])}</code>" +"\nКод країни: " + f"<code>{str(response.json()['countryCode'])}</code>" +"\nОбласть: " + f"<code>{str(response.json()['regionName'])}</code>" +"\nМісто: " + f"<code>{str(response.json()['city'])}</code>" +"\nПоштовий індекс: " + f"<code>{str(response.json()['zip'])}</code>" +"\nЧасовий пояс: " + f"<code>{str(response.json()['timezone'])}</code>" +"\nВалюта: " + f"<code>{str(response.json()['currency'])}</code>" +"\nПровайдер: " + f"<code>{str(response.json()['org'])}</code>" +"\nПроксі сервер? " + f"<code>{str(is_proxy)}</code>" +"\nХостинг? " + f"<code>{str(is_hosting)}</code>")
