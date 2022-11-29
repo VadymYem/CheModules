@@ -1,4 +1,4 @@
-# scope: hikka_min 1.2.10
+# scope: acbot_min 1.2.10
 __version__ = (1, 0, 0)
 
 #              © Copyright 2022
@@ -9,7 +9,7 @@ __version__ = (1, 0, 0)
 # 🌐 https://www.gnu.org/licenses/agpl-3.0.html
 
 # meta developer: @AuthorChe
-# scope: hikka_only
+# scope: acbot_only
 
 import asyncio
 import time
@@ -27,32 +27,6 @@ class SilentTagsMod(loader.Module):
 
     strings = {
         "name": "AllTags",
-        "tagged": """<b>You were tagged!
-        Chat -- <a href="{}">{}</a>
-        User --> <a href="tg://openmessage?user_id={}">{}</a>
-        Message text --></b> <code>{}</code>
-        <b>Link: <a href="https://t.me/c/{}/{}">CLICK</a></b>""",
-        "tag_mentioned": "<b>Окей</b>",
-        "stags_status": "<b>🤫 АнтиTags are {}</b>",
-        "_cfg_doc_silent_users": (
-            "Do not send notifications about tags from users with ids listed"
-        ),
-        "_cfg_doc_silent_chats": (
-            "Do not send notifications about tags from chats with ids listed"
-        ),
-        "_cfg_doc_silent_bots": "Do not send notifications about tags from bots",
-        "_cfg_doc_silent_blocked": (
-            "Do not send notifications about tags from blocked users"
-        ),
-        "_cfg_doc_ignore_users": "Disable SilentTags for users with ids listed",
-        "_cfg_doc_ignore_chats": "Disable SilentTags for chats with ids listed",
-        "_cfg_doc_ignore_bots": "Disable SilentTags for bots",
-        "_cfg_doc_ignore_blocked": "Disable SilentTags for blocked users",
-        "_cfg_doc_silent": "Do not send notifications about Silent Tags being active",
-        "_cfg_doc_use_whitelist": "Convert all Series-like options to whitelist",
-    }
-
-    strings_ru = {
         "tagged": """<b>Тебе згадали!\nЧат -- <a href="{}">{}</a>\nЮзер --> <a href="tg://openmessage?user_id={}">{}</a>\nТекст повідомлення:</b> \n<code>{}</code>\n<b>Посилання: <a href="https://t.me/c/{}/{}">КЛІК</a></b>""",
         "tag_mentioned": "<b>Окей</b>",
         "stags_status": "<b>🤫 ALL Tags logger {}</b>",
@@ -82,6 +56,7 @@ class SilentTagsMod(loader.Module):
         ),
     }
 
+        
     def __init__(self):
         self.config = loader.ModuleConfig(
             loader.ConfigValue(
