@@ -16,7 +16,7 @@ from .. import loader
 class AuthorVttMod(loader.Module):
     """Роспізнавання голосу через Google Recognition API(ua)"""
 
-    strings = {"name": "Author's Voice-to-text(vtt)", "pref": "<b>[Authot's VTT]</b> "}
+    strings = {"name": "Author's Voice-to-text(vtt)", "pref": "<b>[Author's VTT]</b> "}
 
     @loader.owner
     async def avcmd(self, m):
