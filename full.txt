@@ -14,3 +14,4 @@ stata
 5
 6
 7
+Valute
