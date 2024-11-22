@@ -28,10 +28,10 @@ class AuthorVttMod(loader.Module):
             source.name = reply.file.name
             out = BytesIO()
             out.name = "recog.wav"
-            await m.edit(self.strings["pref"] + "Converting...")
+            await m.edit(self.strings["pref"] + "<b>[Author's VTT]</b> ")
             auds.from_file(source).export(out, "wav")
             out.seek(0)
-            await m.edit(self.strings["pref"] + "Processing...")
+            await m.edit(self.strings["pref"] + "<b>[Author's VTT]</b> ")
             recog = srec.Recognizer()
             sample_audio = srec.AudioFile(out)
             with sample_audio as audio_file:
