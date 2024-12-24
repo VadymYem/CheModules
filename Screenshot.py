@@ -10,10 +10,11 @@ from pygments.formatters import ImageFormatter
 from pygments.lexers import Python3Lexer, HtmlLexer, TextLexer
 from docx import Document
 from pdfminer.high_level import extract_text
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
 from .. import loader, utils
 
 logger = logging.getLogger(__name__)
-
 
 @loader.tds
 class WebShotMod(loader.Module):
@@ -27,9 +28,11 @@ class WebShotMod(loader.Module):
 
     @loader.sudo
     async def webcmd(self, message):
-        """.web <link>"""
-        reply = None
-        link = utils.get_args_raw(message)
+        """.web <link> [full]"""
+        args = utils.get_args_raw(message).split()
+        full = "full" in args  # Перевірка наявності аргументу "full"
+        link = next((arg for arg in args if arg != "full"), None)
+
         if not link:
             reply = await message.get_reply_message()
             if not reply:
@@ -38,17 +41,38 @@ class WebShotMod(loader.Module):
             link = reply.raw_text
 
         await message.edit("<b>📸 Знімаю скріншот...</b>")
-        url = "https://mini.s-shot.ru/1024x768/JPEG/1024/Z100/?{}"
-        file = get(url.format(link))
-        file = io.BytesIO(file.content)
-        file.name = "screenshot.png"
-        file.seek(0)
-        await message.client.send_file(message.to_id, file, reply_to=reply)
+
+        try:
+            # Використання Selenium для зняття повного скріншоту
+            chrome_options = Options()
+            chrome_options.add_argument("--headless")
+            chrome_options.add_argument("--disable-gpu")
+            chrome_options.add_argument("--no-sandbox")
+            chrome_options.add_argument("--window-size=1920,1080")
+
+            with webdriver.Chrome(options=chrome_options) as driver:
+                driver.get(link)
+                if full:
+                    height = driver.execute_script("return document.body.scrollHeight")
+                    driver.set_window_size(1920, height)  # Підлаштовуємо висоту для full-page
+                screenshot = driver.get_screenshot_as_png()
+
+            file = io.BytesIO(screenshot)
+            file.name = "screenshot_full.png" if full else "screenshot.png"
+            file.seek(0)
+            await message.client.send_file(message.to_id, file)
+        except Exception as e:
+            await message.edit(f"<b>Помилка зняття скріншота: {e}</b>")
+            return
+
         await message.delete()
 
     async def fscmd(self, message):
-        """.fs + reply to: txt, html, py, docx, pdf"""
+        """.fs <full> + reply to: txt, html, py, docx, pdf"""
+        args = utils.get_args_raw(message)
+        full = "full" in args  # Перевірка наявності аргументу full
         await message.edit("<b>Обробляю файл...</b>")
+
         reply = await message.get_reply_message()
         if not reply or not reply.media:
             await message.edit("<b>Відповідайте на підтримуваний файл!</b>")
@@ -78,7 +102,7 @@ class WebShotMod(loader.Module):
                 await message.edit(f"<b>Непідтримуваний тип файлу: {file_extension}</b>")
                 return
 
-            img_file = "@wsinfo.png"
+            img_file = "@wsinfo_full.png" if full else "@wsinfo.png"
             with open(img_file, "wb") as f:
                 f.write(
                     highlight(
