@@ -10,8 +10,7 @@ from pygments.formatters import ImageFormatter
 from pygments.lexers import Python3Lexer, HtmlLexer, TextLexer
 from docx import Document
 from pdfminer.high_level import extract_text
-from selenium import webdriver
-from selenium.webdriver.chrome.options import Options
+from html2image import Html2Image
 from .. import loader, utils
 
 logger = logging.getLogger(__name__)
@@ -28,41 +27,33 @@ class WebShotMod(loader.Module):
 
     @loader.sudo
     async def webcmd(self, message):
-        """.web <link> [full]"""
+        """.web <link>"""
         args = utils.get_args_raw(message).split()
-        full = "full" in args  # Перевірка наявності аргументу "full"
-        link = next((arg for arg in args if arg != "full"), None)
+        link = args[0] if args else None
 
         if not link:
             reply = await message.get_reply_message()
             if not reply:
-                await message.delete()
+                await message.edit("<b>❌ Вкажіть посилання або відповідайте на текст із посиланням!</b>")
                 return
-            link = reply.raw_text
+            link = reply.raw_text.strip()
 
         await message.edit("<b>📸 Знімаю скріншот...</b>")
 
         try:
-            # Використання Selenium для зняття повного скріншоту
-            chrome_options = Options()
-            chrome_options.add_argument("--headless")
-            chrome_options.add_argument("--disable-gpu")
-            chrome_options.add_argument("--no-sandbox")
-            chrome_options.add_argument("--window-size=1920,1080")
+            hti = Html2Image(output_path="./")  # Директорія для збереження
+            image_file = f"screenshot.png"
+            hti.screenshot(url=link, save_as=image_file)
 
-            with webdriver.Chrome(options=chrome_options) as driver:
-                driver.get(link)
-                if full:
-                    height = driver.execute_script("return document.body.scrollHeight")
-                    driver.set_window_size(1920, height)  # Підлаштовуємо висоту для full-page
-                screenshot = driver.get_screenshot_as_png()
-
-            file = io.BytesIO(screenshot)
-            file.name = "screenshot_full.png" if full else "screenshot.png"
+            file = io.BytesIO()
+            with open(image_file, "rb") as img:
+                file.write(img.read())
+            file.name = image_file
             file.seek(0)
+
             await message.client.send_file(message.to_id, file)
         except Exception as e:
-            await message.edit(f"<b>Помилка зняття скріншота: {e}</b>")
+            await message.edit(f"<b>❌ Помилка зняття скріншота: {e}</b>")
             return
 
         await message.delete()
