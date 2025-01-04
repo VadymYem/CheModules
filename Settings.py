@@ -74,8 +74,8 @@ class CoreMod(loader.Module):
     async def authorcmd(self, message: Message):
         await utils.answer_file(
             message,
-            "https://github.com/hikariatama/assets/raw/master/hikka_cat_banner.mp4",
-            self.strings("hikka").format(
+            "https://authorche.pp.ua/poems/logo.jpg",
+            self.strings("acbot").format(
                 (
                     utils.get_platform_emoji()
                     if self._client.hikka_me.premium and CUSTOM_EMOJIS
