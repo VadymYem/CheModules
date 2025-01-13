@@ -55,9 +55,7 @@ class MDLLib(loader.Library):
         document = (
             await self._dl("@spotifysavebot", full_name) if not document else document
         )
-        document = (
-            await self._dl("@shazambot", full_name) if not document else document
-        )
+        
         document = await self._dl("@lybot", full_name) if not document else document
         return document
 
