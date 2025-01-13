@@ -17,7 +17,7 @@ class SearchvMusicMod(loader.Module):
             return await message.edit("<b>Немає аргументів.</b>")  
         try: 
             await message.edit("<b>Завантажую...</b>") 
-            music = await message.client.inline_query('VKrubot', args) 
+            music = await message.client.inline_query('shazambot', args) 
             await message.delete() 
             await message.client.send_file(message.to_id, music[0].result.document, reply_to=reply.id if reply else None) 
         except: return await message.client.send_message(message.chat_id, f"<b>Музику з назвою '<code>{args}</code>' не знайдено.</b>")
