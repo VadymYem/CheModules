@@ -15,32 +15,29 @@ class HuggingChatMod(loader.Module):
 
     strings = {
         "name": "HuggingChat",
-        "no_args": "❌ <b>Введіть запит:</b> <code>{}{} {}</code>",
-        "no_token": "❌ <b>Токен не знайдено! Додайте:</b> <code>{}cfg huggingchat</code>",
+        "no_args": "❌ <b>Введіть запит:</b> 📌 <code>{}{} {}</code>",
+        "no_token": "❌ <b>Токен не знайдено! Додайте:</b> 📌 <code>{}cfg huggingchat</code>",
         "asking": "🔄 <b>Генерація відповіді...</b>",
         "answer": "🤖 <b>Відповідь {}:</b>\n{}\n\n💬 <b>Запит:</b> {}",
         "api_error": "🚨 <b>Помилка API:</b> {}",
         "model_error": "⚠️ <b>Проблема з моделлю:</b>\n{}",
         "suggest_models": "🏷 <b>Рекомендовані моделі:</b>\n{}",
-        "hf_models": (
-            "<code>HuggingFaceH4/zephyr-7b-beta (7B параметрів, ~5GB)</code>\n"
-        "<code>mistralai/Mistral-7B-Instruct-v0.2</code> (7B, ~5GB)\n"            
-        ),
+        "hf_models": (  
+    "📌 <code>HuggingFaceH4/zephyr-7b-beta </code>(7B параметрів, ~5GB)\n"  
+    "📌 <code>mistralai/Mistral-7B-Instruct-v0.2 </code>(7B, ~5GB)\n"  
+    "📌 <code>tiiuae/falcon-7b-instruct </code>(7B, ~5GB)\n"  
+      ),
     }
     
     strings_ru = {
         "name": "HuggingChat",
-        "no_args": "❌ <b>Введите свой запрос:</b> <code>{}{} {}</code>",
-        "no_token": "❌ <b>Токен не найден! Додайте:</b> <code>{}cfg huggingchat</code>",
+        "no_args": "❌ <b>Введите свой запрос:</b> 📌 <code>{}{} {}</code>",
+        "no_token": "❌ <b>Токен не найден! Додайте:</b> 📌 <code>{}cfg huggingchat</code>",
         "asking": "🔄 <b>Генерация ответов...</b>",
         "answer": "🤖 <b>Ответ {}:</b>\n{}\n\n💬 <b>Запит:</b> {}",
         "api_error": "🚨 <b>Ошибка API:</b> {}",
         "model_error": "⚠️ <b>Проблема модели:</b>\n{}",
         "suggest_models": "🏷 <b>Рекомендуемые модели:</b>\n{}",
-        "hf_models": (
-            "<code>HuggingFaceH4/zephyr-7b-beta (7B параметрів, ~5GB)</code>\n"
-        "<code>mistralai/Mistral-7B-Instruct-v0.2</code> (7B, ~5GB)\n"            
-        ),
     }
 
     def __init__(self):
