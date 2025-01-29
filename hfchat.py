@@ -27,6 +27,7 @@ class HuggingChatMod(loader.Module):
             "┌ <code>meta-llama/Meta-Llama-3-8B-Instruct</code>\n"
             "├ <code>mistralai/Mistral-7B-Instruct-v0.2</code>\n"
             "├ <code>HuggingFaceH4/zephyr-7b-beta</code>\n"
+            "├ <code>google/gemma-2-2b-it</code>\n"
             "├ <code>tiiuae/falcon-7b-instruct</code>\n"
             "└ <code>EleutherAI/gpt-neo-2.7B</code>\n\n"
             "📌 <i>Для зміни моделі використовуй</i> <code>.cfg huggingchat </code> в `default_model` назва моделі яка нам треба"
@@ -62,15 +63,7 @@ class HuggingChatMod(loader.Module):
     "api_error": "🚨 <b>API Error:</b> {}",
     "model_error": "⚠️ <b>Model issue:</b>\n{}",
     "suggest_models": "🏷 <b>Recommended models:</b>\n{}",
-    "hf_models": (
-        "<b>🦾 Recommended models for use:</b>\n\n"
-        "┌ <code>meta-llama/Meta-Llama-3-8B-Instruct</code>\n"
-        "├ <code>mistralai/Mistral-7B-Instruct-v0.2</code>\n"
-        "├ <code>HuggingFaceH4/zephyr-7b-beta</code>\n"
-        "├ <code>tiiuae/falcon-7b-instruct</code>\n"
-        "└ <code>EleutherAI/gpt-neo-2.7B</code>\n\n"
-        "📌 <i>To change the model, use</i> <code>.cfg huggingchat </code> in `default_model` with the desired model name"
-    ),
+    
 }
 
 
@@ -106,6 +99,7 @@ class HuggingChatMod(loader.Module):
             "mistralai/Mistral-7B-Instruct-v0.2",
             "HuggingFaceH4/zephyr-7b-beta",
             "tiiuae/falcon-7b-instruct",
+            "google/gemma-2-2b-it",
             "EleutherAI/gpt-neo-2.7B"
         ]
 
@@ -118,10 +112,12 @@ class HuggingChatMod(loader.Module):
             return f"[INST] {question} [/INST]"
         elif "zephyr" in model.lower():
             return f"<|user|>\n{question}</s>\n<|assistant|>"
+        elif "google/gemma-2-2b-it" in model.lower():
+            return f"<gemma>{question}</gemma>"
         elif "mistral" in model.lower():
             return f"[INST] {question} [/INST]"
         elif "gpt-neo" in model.lower():
-            return f"{question}\n"  # ВИПРАВЛЕНО ВІДСТУПИ
+            return f"{question}\n"
         else:
             return question
 
