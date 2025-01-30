@@ -1,10 +1,8 @@
 # meta developer: @blazeftg, @wsinfo
 # 🔒 Licensed under the GNU AGPLv3
 # 🌐 https://www.gnu.org/licenses/agpl-3.0.html
-
 import logging
 import requests
-
 from .. import loader, utils
 
 logger = logging.getLogger(__name__)
@@ -12,7 +10,6 @@ logger = logging.getLogger(__name__)
 @loader.tds
 class HuggingChatMod(loader.Module):
     """Універсальний чат з підтримкою легких моделей HuggingFace"""
-
     strings = {
         "name": "HuggingChat",
         "no_args": "❌ <b>Введіть запит:</b> <code>{}{} {}</code>",
@@ -35,37 +32,35 @@ class HuggingChatMod(loader.Module):
     }
     
     strings_ru = {
-    "name": "HuggingChat",
-    "no_args": "❌ <b>Введите запрос:</b> <code>{}{} {}</code>",
-    "no_token": "❌ <b>Токен не найден! Добавьте:</b> <code>.cfg huggingchat</code>",
-    "asking": "🔄 <b>Генерация ответа...</b>",
-    "answer": "🤖 <b>Ответ {}:</b>\n{}\n\n💬 <b>Запрос:</b> {}",
-    "api_error": "🚨 <b>Ошибка API:</b> {}",
-    "model_error": "⚠️ <b>Проблема с моделью:</b>\n{}",
-    "suggest_models": "🏷 <b>Рекомендуемые модели:</b>\n{}",
-    "hf_models": (
-        "<b>🦾 Рекомендуемые модели для использования:</b>\n\n"
-        "┌ <code>meta-llama/Meta-Llama-3-8B-Instruct</code>\n"
-        "├ <code>mistralai/Mistral-7B-Instruct-v0.2</code>\n"
-        "├ <code>HuggingFaceH4/zephyr-7b-beta</code>\n"
-        "├ <code>tiiuae/falcon-7b-instruct</code>\n"
-        "└ <code>EleutherAI/gpt-neo-2.7B</code>\n\n"
-        "📌 <i>Для смены модели используй</i> <code>.cfg huggingchat </code> в `default_model` название модели, которая нам нужна"
-    ),
-}
-
+        "name": "HuggingChat",
+        "no_args": "❌ <b>Введите запрос:</b> <code>{}{} {}</code>",
+        "no_token": "❌ <b>Токен не найден! Добавьте:</b> <code>.cfg huggingchat</code>",
+        "asking": "🔄 <b>Генерация ответа...</b>",
+        "answer": "🤖 <b>Ответ {}:</b>\n{}\n\n💬 <b>Запрос:</b> {}",
+        "api_error": "🚨 <b>Ошибка API:</b> {}",
+        "model_error": "⚠️ <b>Проблема с моделью:</b>\n{}",
+        "suggest_models": "🏷 <b>Рекомендуемые модели:</b>\n{}",
+        "hf_models": (
+            "<b>🦾 Рекомендуемые модели для использования:</b>\n\n"
+            "┌ <code>meta-llama/Meta-Llama-3-8B-Instruct</code> {EN ONLY}\n"
+            "├ <code>mistralai/Mistral-7B-Instruct-v0.2</code>\n"
+            "├ <code>google/gemma-2-2b-it</code> {EN ONLY}"
+            "├ <code>HuggingFaceH4/zephyr-7b-beta</code>\n"
+            "├ <code>tiiuae/falcon-7b-instruct</code>\n"
+            "└ <code>EleutherAI/gpt-neo-2.7B</code>\n\n"
+            "📌 <i>Для смены модели используй</i> <code>.cfg huggingchat </code> в `default_model` название модели, которая нам нужна"
+        ),
+    }
     strings_en = {
-    "name": "HuggingChat",
-    "no_args": "❌ <b>Enter a query:</b> <code>{}{} {}</code>",
-    "no_token": "❌ <b>Token not found! Add:</b> <code>.cfg huggingchat</code>",
-    "asking": "🔄 <b>Generating response...</b>",
-    "answer": "🤖 <b>Response {}:</b>\n{}\n\n💬 <b>Query:</b> {}",
-    "api_error": "🚨 <b>API Error:</b> {}",
-    "model_error": "⚠️ <b>Model issue:</b>\n{}",
-    "suggest_models": "🏷 <b>Recommended models:</b>\n{}",
-    
-}
-
+        "name": "HuggingChat",
+        "no_args": "❌ <b>Enter a query:</b> <code>{}{} {}</code>",
+        "no_token": "❌ <b>Token not found! Add:</b> <code>.cfg huggingchat</code>",
+        "asking": "🔄 <b>Generating response...</b>",
+        "answer": "🤖 <b>Response {}:</b>\n{}\n\n💬 <b>Query:</b> {}",
+        "api_error": "🚨 <b>API Error:</b> {}",
+        "model_error": "⚠️ <b>Model issue:</b>\n{}",
+        "suggest_models": "🏷 <b>Recommended models:</b>\n{}",
+    }
 
     def __init__(self):
         self.config = loader.ModuleConfig(
@@ -92,8 +87,14 @@ class HuggingChatMod(loader.Module):
                 "🎨 Creativity (0.1-1.0)",
                 validator=loader.validators.Float(minimum=0.1, maximum=1.0)
             ),
+            loader.ConfigValue(
+                "hflang",
+                "en",
+                "🌍 Language (ua, ru, en)",
+                validator=loader.validators.Choice(["ua", "ru", "en"])
+            ),
         )
-        
+
         self.recommended_models = [
             "meta-llama/Meta-Llama-3-8B-Instruct",
             "mistralai/Mistral-7B-Instruct-v0.2",
@@ -107,19 +108,26 @@ class HuggingChatMod(loader.Module):
         self.client = client
         self.db = db
 
-    def _format_prompt(self, model: str, question: str) -> str:
+    def _format_prompt(self, model: str, question: str, lang: str) -> str:
+        if lang == "ua":
+            instruction = "Відповідай тільки українською мовою, без англійських слів та помилок."
+        elif lang == "ru":
+            instruction = "Answer correctly in russian lang without mistakes."
+        else:
+            instruction = "Provide a grammatically correct answer in English without mistakes."
+
         if "llama" in model.lower():
             return f"[INST] {question} [/INST]"
         elif "zephyr" in model.lower():
-            return f"<|user|>\n{question}</s>\n<|assistant|>"
+            return f"<|user|>\n{instruction}\n{question}</s>\n<|assistant|>"
         elif "google/gemma-2-2b-it" in model.lower():
             return f"<gemma>{question}</gemma>"
         elif "mistral" in model.lower():
-            return f"[INST] {question} [/INST]"
+            return f"[INST] {instruction} {question} [/INST]"
         elif "gpt-neo" in model.lower():
-            return f"{question}\n"
+            return f"{instruction} {question}\n"
         else:
-            return question
+            return f"{instruction} {question}"
 
     @loader.command()
     async def hfmodels(self, message):
@@ -129,8 +137,8 @@ class HuggingChatMod(loader.Module):
     @loader.command()
     async def hfchat(self, message):
         """Задати питання моделі"""
-        question = utils.get_args_raw(message)
-        if not question:
+        args = utils.get_args_raw(message)
+        if not args:
             return await utils.answer(message, self.strings["no_args"].format(
                 self.get_prefix(), "hfchat", "[запит]"
             ))
@@ -138,6 +146,8 @@ class HuggingChatMod(loader.Module):
         if not self.config["hf_api_key"]:
             return await utils.answer(message, self.strings["no_token"].format(self.get_prefix()))
 
+        question = args
+        lang = self.config["hflang"]
         await utils.answer(message, self.strings["asking"])
 
         headers = {
@@ -146,8 +156,10 @@ class HuggingChatMod(loader.Module):
         }
 
         current_model = self.config["default_model"]
+        prompt = self._format_prompt(current_model, question, lang)
+
         payload = {
-            "inputs": self._format_prompt(current_model, question),
+            "inputs": prompt,
             "parameters": {
                 "max_new_tokens": self.config["max_new_tokens"],
                 "temperature": self.config["temperature"],
@@ -179,16 +191,15 @@ class HuggingChatMod(loader.Module):
 
             error_data = response.json()
             error_msg = f"{response.status_code} - {error_data.get('error', 'Невідома помилка')}"
-            
+
             if response.status_code == 503:
                 suggestions = "\n".join([f"• <code>{m}</code>" for m in self.recommended_models])
                 error_msg += f"\n\n{self.strings['suggest_models'].format(suggestions)}"
-            
+
             return await utils.answer(
                 message,
                 self.strings["model_error"].format(error_msg)
             )
-
         except Exception as e:
             logger.exception("API error")
             return await utils.answer(
