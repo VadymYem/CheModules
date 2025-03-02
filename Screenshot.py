@@ -65,6 +65,9 @@ class WebShotMod(loader.Module):
             elif file_extension == ".html":
                 text = file_bytes.decode("utf-8")
                 lexer = HtmlLexer()
+            elif file_extension == ".json":
+                text = file_bytes.decode("utf-8")
+                lexer = TextLexer()
             elif file_extension == ".docx":
                 file_stream = io.BytesIO(file_bytes)
                 document = Document(file_stream)
