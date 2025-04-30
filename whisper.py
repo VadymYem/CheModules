@@ -1,3 +1,4 @@
+#meta developer: @BlazeFtg / @Author_Che 
 # requires: pydub speechRecognition moviepy telethon requests google-generativeai pillow
 
 from io import BytesIO
