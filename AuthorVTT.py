@@ -35,7 +35,7 @@ class AuthorVTTModEnhanced(loader.Module):
     """Розпізнавання голосу через Google Recognition та Gemini (AI Studio) з авто-режимом. AuthorVTT"""
     strings = {
         "name": "AuthorVTT: Голос в Текст",
-        "pref": "<b>🎙️ AuthorVTT:</b> ",
+        "pref": "<b>🎙️ AuthorVTT\n</b> ",
         "processing": "⏳ Обробка...",
         "downloading": "📥 Завантаження...",
         "recognizing": "🗣️ Розпізнавання...",
