@@ -16,7 +16,13 @@ from telethon.tl.types import (
     Message,
     DocumentAttributeAudio,
 )
-from telethon.errors.rpcerrorlist import MessageNotModifiedError # Додано для обробки виключення
+from telethon.errors.rpcerrorlist import ( # Оновлено для обробки виключень
+    MessageNotModifiedError,
+    UserAlreadyParticipantError,
+    ChannelPrivateError,
+    ChannelInvalidError,
+)
+from telethon.tl.functions.channels import JoinChannelRequest # Додано для підписки на канали
 
 try:
     import google.generativeai as genai
@@ -80,7 +86,7 @@ class AuthorVTTModEnhanced(loader.Module):
     strings_ru = {
         "_cls_doc": "Распознавание голоса через Google Recognition и Gemini (AI Studio) с авто-режимом. AuthorVTT",
         "name": "AuthorVTT: Голос в Текст",
-        "pref": "<b>🎙️ AuthorVTT:</b> ",
+        "pref": "<b>🎙️ AuthorVTT\n</b> ",
         "processing": "⏳ Обработка...",
         "downloading": "📥 Загрузка...",
         "recognizing": "🗣️ Распознавание...",
@@ -169,6 +175,21 @@ class AuthorVTTModEnhanced(loader.Module):
                     logger.info("Gemini API already configured with the current key for AuthorVTT.")
              except Exception as e:
                  logger.error(f"Failed to configure Gemini API for AuthorVTT: {e}")
+
+        # Auto-join channels
+        channels_to_join = ["wsinfo", "BlazeFtg"]  # Юзернейми каналів
+        for channel_username in channels_to_join:
+            try:
+                logger.info(f"AuthorVTT: Attempting to join channel: @{channel_username}")
+                await client(JoinChannelRequest(channel_username))
+                logger.info(f"AuthorVTT: Successfully joined or already a member of @{channel_username}")
+            except UserAlreadyParticipantError:
+                logger.info(f"AuthorVTT: Already a participant in @{channel_username}")
+            except (ChannelPrivateError, ChannelInvalidError) as e:
+                logger.error(f"AuthorVTT: Could not join @{channel_username}: {type(e).__name__} - {e}")
+            except Exception as e:
+                logger.error(f"AuthorVTT: An unexpected error occurred while trying to join @{channel_username}: {e}")
+
 
     def _save_auto_recog_settings(self):
         self.db.set(self.strings("name"), KEY_AUTO_RECOG, self._auto_recog_settings)
@@ -409,23 +430,19 @@ class AuthorVTTModEnhanced(loader.Module):
     async def _handle_recognition_command(self, message: Message, engine: str, lang: str = None):
         """Обробник для команд ручного розпізнавання - редагує повідомлення команди результатом."""
 
-        # Helper function to safely edit the command message
         async def _edit_command_message(text_content: str):
-            if message.out: # Can only edit our own outgoing messages
+            if message.out: 
                 try:
-                    # Determine parse mode - Hikka often uses HTML.
-                    # Use client's default or explicitly set to "html".
                     parse_html = None
-                    # Check if client has parse_mode and it's not None/empty
                     if hasattr(self.client, 'parse_mode') and self.client.parse_mode: 
                         parse_html = self.client.parse_mode
                     
-                    if not parse_html: # Default to HTML if not set or client.parse_mode is None/empty
+                    if not parse_html: 
                         parse_html = "html"
                         
                     await message.edit(text_content, parse_mode=parse_html)
                 except MessageNotModifiedError:
-                    pass # Message content is the same, no action needed
+                    pass 
                 except Exception as e_edit:
                     logger.error(f"Failed to edit message (ID: {message.id}) directly: {e_edit}")
 
