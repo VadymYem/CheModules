@@ -262,27 +262,27 @@ class AuthorVTTMod(loader.Module):
             await utils.answer(status_msg, self.strings("pref") + text)
 
     # MANUAL RECOGNITION COMMANDS
-    @loader.owner
+    @loader.command()
     async def vua(self, m: Message):
         """<відповідь> - Розпізнати українською (Google)"""
         await self._handle_recognition_command(m, "google", "uk-UA")
 
-    @loader.owner
+    @loader.command()
     async def vru(self, m: Message):
         """<відповідь> - Розпізнати російською (Google)"""
         await self._handle_recognition_command(m, "google", "ru-RU")
 
-    @loader.owner
+    @loader.command()
     async def ven(self, m: Message):
         """<відповідь> - Розпізнати англійською (Google)"""
         await self._handle_recognition_command(m, "google", "en-US")
 
-    @loader.owner
+    @loader.command()
     async def vai(self, m: Message):
         """<відповідь> - Розпізнати мовлення (Gemini AI)"""
         await self._handle_recognition_command(m, "gemini")
 
-    @loader.owner
+    @loader.command()
     async def wh(self, m: Message):
         """<відповідь> - Розпізнати мовлення (Whisper)"""
         await self._handle_recognition_command(m, "whisper")
@@ -310,27 +310,27 @@ class AuthorVTTMod(loader.Module):
         self._save_auto_recog_settings()
         await utils.answer(message, self.strings("pref") + text)
 
-    @loader.owner
+    @loader.command()
     async def autoua(self, m: Message):
         """Перемкнути авто-розпізнавання українською (Google)"""
         await self._toggle_auto_recog(m, "google", "uk-UA")
 
-    @loader.owner
+    @loader.command()
     async def autoru(self, m: Message):
         """Перемкнути авто-розпізнавання російською (Google)"""
         await self._toggle_auto_recog(m, "google", "ru-RU")
 
-    @loader.owner
+    @loader.command()
     async def autoen(self, m: Message):
         """Перемкнути авто-розпізнавання англійською (Google)"""
         await self._toggle_auto_recog(m, "google", "en-US")
 
-    @loader.owner
+    @loader.command()
     async def autoai(self, m: Message):
         """Перемкнути авто-розпізнавання (Gemini AI)"""
         await self._toggle_auto_recog(m, "gemini")
 
-    @loader.owner
+    @loader.command()
     async def autowh(self, m: Message):
         """Перемкнути авто-розпізнавання (Whisper)"""
         await self._toggle_auto_recog(m, "whisper")
