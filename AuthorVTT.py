@@ -70,21 +70,21 @@ class AuthorVTTMod(loader.Module):
 
     def __init__(self):
         self.config = loader.ModuleConfig(
-            loader.ConfigValue("gemini_api_key", None, self.strings("cfg_gemini_key"), validator=loader.validators.Hidden()),
-            loader.ConfigValue("whisper_api_key", None, self.strings("cfg_whisper_key"), validator=loader.validators.Hidden()),
-            loader.ConfigValue("ignore_users", [], self.strings("cfg_ignore_users"), validator=loader.validators.Series(validator=loader.validators.TelegramID())),
-            loader.ConfigValue("silent", False, self.strings("cfg_silent"), validator=loader.validators.Boolean()),
-            loader.ConfigValue("max_duration_voice", 300, self.strings("cfg_max_duration_voice"), validator=loader.validators.Integer(minimum=10)),
-            loader.ConfigValue("max_duration_video", 120, self.strings("cfg_max_duration_video"), validator=loader.validators.Integer(minimum=10)),
-            loader.ConfigValue("max_size_mb", 25, self.strings("cfg_max_size_mb"), validator=loader.validators.Integer(minimum=1)),
-            loader.ConfigValue("min_duration", 2, self.strings("cfg_min_duration"), validator=loader.validators.Integer(minimum=1)),
+            loader.ConfigValue("gemini_api_key", None, lambda: self.strings["cfg_gemini_key"], validator=loader.validators.Hidden()),
+            loader.ConfigValue("whisper_api_key", None, lambda: self.strings["cfg_whisper_key"], validator=loader.validators.Hidden()),
+            loader.ConfigValue("ignore_users", [], lambda: self.strings["cfg_ignore_users"], validator=loader.validators.Series(validator=loader.validators.TelegramID())),
+            loader.ConfigValue("silent", False, lambda: self.strings["cfg_silent"], validator=loader.validators.Boolean()),
+            loader.ConfigValue("max_duration_voice", 300, lambda: self.strings["cfg_max_duration_voice"], validator=loader.validators.Integer(minimum=10)),
+            loader.ConfigValue("max_duration_video", 120, lambda: self.strings["cfg_max_duration_video"], validator=loader.validators.Integer(minimum=10)),
+            loader.ConfigValue("max_size_mb", 25, lambda: self.strings["cfg_max_size_mb"], validator=loader.validators.Integer(minimum=1)),
+            loader.ConfigValue("min_duration", 2, lambda: self.strings["cfg_min_duration"], validator=loader.validators.Integer(minimum=1)),
         )
 
     async def client_ready(self, client, db):
         self.client = client
         self.db = db
         self._me_id = (await client.get_me()).id
-        self._auto_recog_settings = self.db.get(self.strings("name"), KEY_AUTO_RECOG, {})
+        self._auto_recog_settings = self.db.get(self.strings["name"], KEY_AUTO_RECOG, {})
         if GEMINI_AVAILABLE and self.config["gemini_api_key"]:
             try:
                 genai.configure(api_key=self.config["gemini_api_key"])
@@ -141,15 +141,15 @@ class AuthorVTTMod(loader.Module):
         max_dur = self.config["max_duration_video"] if is_video else self.config["max_duration_voice"]
         min_dur = self.config["min_duration"]
         
-        if duration and duration < min_dur: raise ValueError(self.strings("too_short").format(min_dur))
+        if duration and duration < min_dur: raise ValueError(self.strings["too_short"].format(min_dur))
         if duration and duration > max_dur: raise ValueError("too_big")
         if (target.file.size or 0) / 1024 / 1024 > self.config["max_size_mb"]: raise ValueError("too_big")
         
         tmp = tempfile.mkdtemp()
         try:
-            await status.edit(self.strings("pref") + self.strings("downloading"))
+            await status.edit(self.strings["pref"] + self.strings["downloading"])
             media = await target.download_media(file=os.path.join(tmp, "media"))
-            await status.edit(self.strings("pref") + self.strings("processing"))
+            await status.edit(self.strings["pref"] + self.strings["processing"])
             
             api_format = "wav" if engine == "google" else "mp3"
             api_audio = os.path.join(tmp, f"audio.{api_format}")
@@ -157,7 +157,7 @@ class AuthorVTTMod(loader.Module):
             segment = await utils.run_sync(auds.from_file, media)
             await utils.run_sync(segment.export, api_audio, format=api_format)
 
-            await status.edit(self.strings("pref") + self.strings("recognizing"))
+            await status.edit(self.strings["pref"] + self.strings["recognizing"])
 
             if engine == "google": return await self._recognize_google(api_audio, lang)
             if engine == "gemini": return await self._recognize_gemini(api_audio)
@@ -227,7 +227,7 @@ class AuthorVTTMod(loader.Module):
             engine_map = {"google": self.strings("google_lang").format(lang), "gemini": self.strings("gemini"), "whisper": self.strings("whisper")}
             text = self.strings("auto_on").format(engine=engine_map[engine])
 
-        self.db.set(self.strings("name"), KEY_AUTO_RECOG, self._auto_recog_settings)
+        self.db.set(self.strings["name"], KEY_AUTO_RECOG, self._auto_recog_settings)
         await utils.answer(m, self.strings("pref") + text)
 
     async def autoua(self, m: Message):
