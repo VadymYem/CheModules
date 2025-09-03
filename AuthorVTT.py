@@ -11,7 +11,12 @@ import speech_recognition as srec
 from pydub import AudioSegment as auds
 from moviepy.editor import VideoFileClip
 from telethon.tl.types import Message, DocumentAttributeVideo, DocumentAttributeAudio
-from telethon.errors.rpcerrorlist import UserAlreadyParticipantError
+from telethon.errors.rpcerrorlist import (
+    MessageNotModifiedError,
+    UserAlreadyParticipantError,
+    ChannelPrivateError,
+    ChannelInvalidError,
+)
 from telethon.tl.functions.channels import JoinChannelRequest
 
 try:
@@ -36,245 +41,347 @@ class AuthorVTTMod(loader.Module):
         "downloading": "📥 Завантаження...",
         "recognizing": "🗣️ Розпізнавання...",
         "recognized": "💬 <b>Розпізнано:</b>\n<i>{}</i>",
-        "no_reply": "🫠 Дайте відповідь на аудіо/голосове/відео.",
-        "audio_extract_error": "🚫 Помилка вилучення аудіо.",
+        "no_reply": "🫠 Дайте відповідь на аудіо/голосове/відео повідомлення.",
+        "audio_extract_error": "🚫 Помилка вилучення аудіо з відео.",
         "conversion_error": "🚫 Помилка конвертації аудіо.",
-        "recognition_error": "🚫 <b>Помилка розпізнавання!</b>",
+        "recognition_error": "🚫 <b>Помилка розпізнавання!</b> Можливі проблеми з API або визначенням мови.",
         "api_error": "🚫 <b>Помилка API ({source}):</b> {error}",
-        "too_big": "🫥 <b>Медіафайл завеликий або задовгий.</b>",
-        "too_short": "🤏 <b>Медіафайл закороткий (мін. {}с).</b>",
+        "too_big": "🫥 <b>Медіафайл завеликий або задовгий.</b> (Перевірте ліміти в конфізі)",
+        "too_short": "🤏 <b>Медіафайл закороткий для розпізнавання.</b> (Мін. тривалість: {}с)",
 
         "google_lang": "Google ({})",
         "gemini": "Gemini (AI)",
         "whisper": "Whisper",
 
-        "auto_on": "✅ <b>Авто-розпізнавання ({engine}) увімкнено.</b>",
-        "auto_off": "⛔️ <b>Авто-розпізнавання вимкнено.</b>",
+        "auto_on": "✅ <b>Авто-розпізнавання ({engine}) увімкнено в цьому чаті.</b>",
+        "auto_off": "⛔️ <b>Авто-розпізнавання вимкнено в цьому чаті.</b>",
 
-        "cfg_gemini_key": "Ключ API Google AI Studio (Gemini).",
-        "cfg_whisper_key": "Ключ API Hugging Face (для Whisper).",
-        "cfg_ignore_users": "Список ID користувачів для ігнорування.",
-        "cfg_silent": "Тихий режим (без помилок в авто-режимі).",
+        "cfg_gemini_key": "Ключ API Google AI Studio (Gemini). Отримати: aistudio.google.com/app/apikey",
+        "cfg_whisper_key": "Ключ API Hugging Face. Отримати: huggingface.co/settings/tokens",
+        "cfg_ignore_users": "Список ID користувачів для ігнорування в авто-розпізнаванні.",
+        "cfg_silent": "Тихий режим (без повідомлень про помилки в авто-режимі).",
         "cfg_max_duration_voice": "Макс. тривалість (сек) для голосових/аудіо.",
         "cfg_max_duration_video": "Макс. тривалість (сек) для відео.",
-        "cfg_max_size_mb": "Макс. розмір файлу (МБ).",
-        "cfg_min_duration": "Мін. тривалість (сек) для розпізнавання.",
+        "cfg_max_size_mb": "Макс. розмір файлу (МБ) для розпізнавання.",
+        "cfg_min_duration": "Мін. тривалість (сек) для розпізнавання (мін. 1).",
 
-        "gemini_token_missing": "🚫 <b>Відсутній API-ключ Gemini.</b>\nНалаштуйте в <code>.config</code>. Інфо: <code>.geminiguide</code>.",
-        "gemini_lib_missing": "🚫 <b>Відсутня бібліотека <code>google-generativeai</code>.</b>",
-        "whisper_token_missing": "🚫 <b>Відсутній API-ключ Hugging Face.</b>\nНалаштуйте в <code>.config</code>. Інфо: <code>.whguide</code>.",
+        "gemini_token_missing": "🚫 <b>Відсутній API-ключ Google AI (Gemini).</b>\nНалаштуйте його в <code>.config</code>. Див. <code>.geminiguide</code>.",
+        "gemini_lib_missing": "🚫 <b>Відсутня бібліотека <code>google-generativeai</code>.</b>\nВстановіть: <code>.pip install google-generativeai</code> та перезапустіть Hikka.",
+        "whisper_token_missing": "🚫 <b>Відсутній API-ключ Hugging Face.</b>\nНалаштуйте його в <code>.config</code>. Див. <code>.whguide</code>.",
 
-        "gemini_instructions": "👩‍🎓 <b>Як отримати API-ключ Gemini:</b>\n<b>1. Відкрийте:</b> <a href=\"https://aistudio.google.com/app/apikey\">aistudio.google.com</a>\n<b>2. Увійдіть та натисніть 'Create API key'.</b>\n<b>3. Скопіюйте ключ та вставте в конфіг модуля.</b>",
-        "whisper_instructions": "👩‍🎓 <b>Як отримати API-ключ для Whisper:</b>\n<b>1. Відкрийте:</b> <a href=\"https://huggingface.co/settings/tokens\">huggingface.co/settings/tokens</a>\n<b>2. Увійдіть та натисніть 'New Token'.</b>\n<b>3. Виберіть роль 'read' та скопіюйте токен.</b>",
+        "gemini_instructions": (
+            "👩‍🎓 <b>Як отримати API-ключ Google AI (Gemini):</b>\n"
+            "<b>1. Відкрийте:</b> <a href=\"https://aistudio.google.com/app/apikey\">aistudio.google.com/app/apikey</a>\n"
+            "<b>2. Увійдіть за допомогою свого облікового запису Google.</b>\n"
+            "<b>3. Натисніть 'Create API key in new project'.</b>\n"
+            "<b>4. Скопіюйте ключ та вставте його в конфіг модуля.</b>"
+        ),
+        "whisper_instructions": (
+            "👩‍🎓 <b>Як отримати API-ключ Hugging Face:</b>\n"
+            "<b>1. Відкрийте:</b> <a href=\"https://huggingface.co/settings/tokens\">huggingface.co/settings/tokens</a>\n"
+            "<b>2. Увійдіть у свій акаунт.</b>\n"
+            "<b>3. Натисніть 'New Token'.</b>\n"
+            "<b>4. Дайте токену будь-яку назву, виберіть роль 'read'.</b>\n"
+            "<b>5. Натисніть 'Generate a token', скопіюйте його та вставте в конфіг.</b>"
+        ),
     }
 
     def __init__(self):
         self.config = loader.ModuleConfig(
-            loader.ConfigValue("gemini_api_key", None, lambda: self.strings["cfg_gemini_key"], validator=loader.validators.Hidden()),
-            loader.ConfigValue("whisper_api_key", None, lambda: self.strings["cfg_whisper_key"], validator=loader.validators.Hidden()),
-            loader.ConfigValue("ignore_users", [], lambda: self.strings["cfg_ignore_users"], validator=loader.validators.Series(validator=loader.validators.TelegramID())),
-            loader.ConfigValue("silent", False, lambda: self.strings["cfg_silent"], validator=loader.validators.Boolean()),
-            loader.ConfigValue("max_duration_voice", 300, lambda: self.strings["cfg_max_duration_voice"], validator=loader.validators.Integer(minimum=10)),
-            loader.ConfigValue("max_duration_video", 120, lambda: self.strings["cfg_max_duration_video"], validator=loader.validators.Integer(minimum=10)),
-            loader.ConfigValue("max_size_mb", 25, lambda: self.strings["cfg_max_size_mb"], validator=loader.validators.Integer(minimum=1)),
-            loader.ConfigValue("min_duration", 2, lambda: self.strings["cfg_min_duration"], validator=loader.validators.Integer(minimum=1)),
+            loader.ConfigValue("gemini_api_key", None, lambda: self.strings("cfg_gemini_key"), validator=loader.validators.Hidden()),
+            loader.ConfigValue("whisper_api_key", None, lambda: self.strings("cfg_whisper_key"), validator=loader.validators.Hidden()),
+            loader.ConfigValue("ignore_users", [], lambda: self.strings("cfg_ignore_users"), validator=loader.validators.Series(validator=loader.validators.TelegramID())),
+            loader.ConfigValue("silent", False, lambda: self.strings("cfg_silent"), validator=loader.validators.Boolean()),
+            loader.ConfigValue("max_duration_voice", 300, lambda: self.strings("cfg_max_duration_voice"), validator=loader.validators.Integer(minimum=10)),
+            loader.ConfigValue("max_duration_video", 120, lambda: self.strings("cfg_max_duration_video"), validator=loader.validators.Integer(minimum=10)),
+            loader.ConfigValue("max_size_mb", 25, lambda: self.strings("cfg_max_size_mb"), validator=loader.validators.Integer(minimum=1)),
+            loader.ConfigValue("min_duration", 2, lambda: self.strings("cfg_min_duration"), validator=loader.validators.Integer(minimum=1)),
         )
+        self._auto_recog_settings = {}
+        self._me_id = -1
 
     async def client_ready(self, client, db):
         self.client = client
         self.db = db
         self._me_id = (await client.get_me()).id
-        self._auto_recog_settings = self.db.get(self.strings["name"], KEY_AUTO_RECOG, {})
+        self._auto_recog_settings = self.db.get(self.strings("name"), KEY_AUTO_RECOG, {})
+
         if GEMINI_AVAILABLE and self.config["gemini_api_key"]:
             try:
                 genai.configure(api_key=self.config["gemini_api_key"])
+                logger.info("AuthorVTT: Gemini API configured.")
             except Exception as e:
-                logger.error(f"AuthorVTT: Gemini API configure error: {e}")
+                logger.error(f"AuthorVTT: Failed to configure Gemini API: {e}")
+        
         for channel in ["wsinfo", "BlazeFtg"]:
             try:
                 await client(JoinChannelRequest(channel))
-            except UserAlreadyParticipantError:
+            except Exception:
                 pass
-            except Exception as e:
-                logger.warning(f"AuthorVTT: Can't join {channel}: {e}")
 
-    # RECOGNITION ENGINES
-    async def _recognize_google(self, path: str, lang: str) -> str:
-        r = srec.Recognizer()
-        with srec.AudioFile(path) as source:
-            audio = r.record(source)
-        return await utils.run_sync(r.recognize_google, audio, language=lang)
+    def _save_auto_recog_settings(self):
+        self.db.set(self.strings("name"), KEY_AUTO_RECOG, self._auto_recog_settings)
 
-    async def _recognize_gemini(self, path: str) -> str:
+    # GOOGLE RECOGNITION ENGINE
+    async def _recognize_google(self, audio_path: str, lang: str) -> str:
+        recog = srec.Recognizer()
+        try:
+            with srec.AudioFile(audio_path) as audio_file:
+                audio_content = recog.record(audio_file)
+            return await utils.run_sync(recog.recognize_google, audio_content, language=lang)
+        except srec.UnknownValueError:
+            raise ValueError("Google не зміг розпізнати мовлення")
+        except srec.RequestError as e:
+            raise ConnectionError(f"Помилка сервісу Google: {e}")
+        except Exception as e:
+            raise RuntimeError(f"Внутрішня помилка Google Recognition: {e}")
+
+    # GEMINI RECOGNITION ENGINE
+    async def _recognize_gemini(self, audio_path: str, lang: str = None) -> str:
         if not GEMINI_AVAILABLE: raise RuntimeError("gemini_lib_missing")
         if not self.config["gemini_api_key"]: raise ValueError("gemini_token_missing")
         
-        file = None
+        audio_file_resource = None
         try:
             genai.configure(api_key=self.config["gemini_api_key"])
-            file = await utils.run_sync(genai.upload_file, path=path)
+            audio_file_resource = await utils.run_sync(genai.upload_file, path=audio_path)
+            
+            timeout = 300
+            start_time = asyncio.get_event_loop().time()
+            while audio_file_resource.state.name == "PROCESSING":
+                if asyncio.get_event_loop().time() - start_time > timeout:
+                    raise TimeoutError(f"Обробка файлу в Gemini зайняла більше {timeout}с")
+                await asyncio.sleep(2)
+                audio_file_resource = await utils.run_sync(genai.get_file, name=audio_file_resource.name)
+            
+            if audio_file_resource.state.name != "ACTIVE":
+                raise RuntimeError(f"Файл в Gemini не оброблено (статус: {audio_file_resource.state.name})")
+
             model = genai.GenerativeModel(model_name="models/gemini-1.5-flash-latest")
-            prompt = "Provide a precise transcription of the audio. Output only the text itself."
-            response = await utils.run_sync(model.generate_content, [prompt, file], request_options={"timeout": 300})
+            prompt = "Provide a precise transcription of the audio. Output only the text itself, with no extra commentary."
+            response = await utils.run_sync(model.generate_content, [prompt, audio_file_resource], request_options={"timeout": 300})
+            
             return response.text.strip()
+        except Exception as e:
+            logger.exception("Gemini recognition error")
+            raise RuntimeError(f"Помилка обробки в Gemini: {e}")
         finally:
-            if file: await utils.run_sync(genai.delete_file, name=file.name)
+            if audio_file_resource:
+                try:
+                    await utils.run_sync(genai.delete_file, name=audio_file_resource.name)
+                except Exception as del_err:
+                    logger.warning(f"Gemini: Could not delete file {audio_file_resource.name}: {del_err}")
 
-    async def _recognize_whisper(self, path: str) -> str:
+    # WHISPER RECOGNITION ENGINE
+    async def _recognize_whisper(self, audio_path: str, lang: str = None) -> str:
         if not self.config["whisper_api_key"]: raise ValueError("whisper_token_missing")
+        
         API_URL = "https://api-inference.huggingface.co/models/openai/whisper-large-v3"
-        headers = {"Authorization": f"Bearer {self.config['whisper_api_key']}", "Content-Type": "audio/mpeg"}
-        with open(path, "rb") as f: data = f.read()
-        r = await utils.run_sync(requests.post, API_URL, headers=headers, data=data)
-        if r.status_code != 200: raise ConnectionError(f"({r.status_code}): {r.json().get('error', r.text)}")
-        return r.json().get("text", "").strip()
+        headers = {
+            "Authorization": f"Bearer {self.config['whisper_api_key']}",
+            "Content-Type": "audio/mpeg",
+        }
+        with open(audio_path, "rb") as f:
+            data = f.read()
 
-    # CORE LOGIC
-    async def _process_media(self, msg: Message, engine: str, lang: str, status: Message):
-        target = await msg.get_reply_message() or msg
-        if not target.media or target.file.mime_type.split("/")[0] not in ["audio", "video"]:
+        response = await utils.run_sync(requests.post, API_URL, headers=headers, data=data)
+
+        if response.status_code != 200:
+            error_details = response.json().get("error", response.text)
+            raise ConnectionError(f"({response.status_code}): {error_details}")
+        
+        return response.json().get("text", "").strip()
+
+    # CORE MEDIA PROCESSING LOGIC
+    async def _process_media(self, message: Message, engine: str, lang: str, status_msg: Message = None):
+        target_message = await message.get_reply_message() or message
+        
+        if not target_message.media or (target_message.file.mime_type.split("/")[0] not in ["audio", "video"]):
             raise ValueError("no_reply")
 
-        is_video = target.video is not None
-        duration = getattr(target.media, 'duration', 0) or 0
+        is_video = target_message.video is not None
+        duration = getattr(target_message.media, 'duration', 0) or 0
+        size_mb = (target_message.file.size or 0) / 1024 / 1024
         
         max_dur = self.config["max_duration_video"] if is_video else self.config["max_duration_voice"]
         min_dur = self.config["min_duration"]
         
-        if duration and duration < min_dur: raise ValueError(self.strings["too_short"].format(min_dur))
+        if duration and duration < min_dur: raise ValueError(self.strings("too_short").format(min_dur))
         if duration and duration > max_dur: raise ValueError("too_big")
-        if (target.file.size or 0) / 1024 / 1024 > self.config["max_size_mb"]: raise ValueError("too_big")
+        if size_mb > self.config["max_size_mb"]: raise ValueError("too_big")
         
-        tmp = tempfile.mkdtemp()
+        temp_dir = tempfile.mkdtemp()
         try:
-            await status.edit(self.strings["pref"] + self.strings["downloading"])
-            media = await target.download_media(file=os.path.join(tmp, "media"))
-            await status.edit(self.strings["pref"] + self.strings["processing"])
+            if status_msg: await status_msg.edit(self.strings("pref") + self.strings("downloading"))
+            media_path = await target_message.download_media(file=os.path.join(temp_dir, "media"))
             
-            api_format = "wav" if engine == "google" else "mp3"
-            api_audio = os.path.join(tmp, f"audio.{api_format}")
+            if status_msg: await status_msg.edit(self.strings("pref") + self.strings("processing"))
             
-            segment = await utils.run_sync(auds.from_file, media)
-            await utils.run_sync(segment.export, api_audio, format=api_format)
+            # Prepare a universal audio format (mp3 for Whisper, wav for Google)
+            audio_for_api = os.path.join(temp_dir, "audio.wav" if engine == "google" else "audio.mp3")
+            
+            if is_video:
+                with VideoFileClip(media_path) as clip:
+                    if clip.audio is None: raise ValueError("audio_extract_error")
+                    await utils.run_sync(clip.audio.write_audiofile, audio_for_api, logger=None)
+            else:
+                segment = await utils.run_sync(auds.from_file, media_path)
+                await utils.run_sync(segment.export, audio_for_api, format="wav" if engine == "google" else "mp3")
 
-            await status.edit(self.strings["pref"] + self.strings["recognizing"])
+            if status_msg: await status_msg.edit(self.strings("pref") + self.strings("recognizing"))
 
-            if engine == "google": return await self._recognize_google(api_audio, lang)
-            if engine == "gemini": return await self._recognize_gemini(api_audio)
-            if engine == "whisper": return await self._recognize_whisper(api_audio)
+            if engine == "google": return await self._recognize_google(audio_for_api, lang)
+            if engine == "gemini": return await self._recognize_gemini(audio_for_api)
+            if engine == "whisper": return await self._recognize_whisper(audio_for_api)
+
         finally:
-            for f in os.listdir(tmp): os.remove(os.path.join(tmp, f))
-            os.rmdir(tmp)
+            for f in os.listdir(temp_dir): os.remove(os.path.join(temp_dir, f))
+            os.rmdir(temp_dir)
 
-    async def _format_error(self, e: Exception, engine: str) -> str:
-        key = str(e)
-        source_map = {"google": "Google", "gemini": "Gemini", "whisper": "Whisper"}
-        
-        if key in self.strings: return self.strings(key)
-        if "too_short" in key: return key
-        if isinstance(e, (ConnectionError, TimeoutError)):
-            return self.strings("api_error").format(source=source_map.get(engine, "API"), error=key)
-        
-        logger.exception("Recognition error")
-        return self.strings("recognition_error")
-
-    # COMMANDS
-    async def _run_command(self, m: Message, engine: str, lang: str = None):
-        status = await utils.answer(m, self.strings("pref") + self.strings("processing"))
+    # COMMAND HANDLER
+    async def _handle_recognition_command(self, message: Message, engine: str, lang: str = None):
+        status_msg = await utils.answer(message, self.strings("pref") + self.strings("processing"))
         try:
-            text = await self._process_media(m, engine, lang, status)
-            if not text: raise RuntimeError("Результат розпізнавання порожній.")
-            await utils.answer(status, self.strings("pref") + self.strings("recognized").format(text))
+            recognized_text = await self._process_media(message, engine, lang, status_msg)
+            if not recognized_text: raise RuntimeError("Результат розпізнавання порожній.")
+            
+            await utils.answer(status_msg, self.strings("pref") + self.strings("recognized").format(recognized_text))
         except Exception as e:
-            await utils.answer(status, self.strings("pref") + await self._format_error(e, engine))
-        if m.out: await m.delete()
+            error_key = str(e)
+            source = engine.capitalize()
+            if engine == 'whisper': source = "Whisper"
 
+            text = self.strings("recognition_error")
+            if error_key in ["no_reply", "too_big", "audio_extract_error", "gemini_token_missing", "gemini_lib_missing", "whisper_token_missing"] or "too_short" in error_key:
+                text = self.strings(error_key.split('(')[0].strip()) if '(' in error_key else self.strings(error_key)
+            elif isinstance(e, (ConnectionError, TimeoutError)):
+                text = self.strings("api_error").format(source=source, error=error_key)
+            elif isinstance(e, RuntimeError):
+                text = self.strings("api_error").format(source=source, error=error_key)
+
+            await utils.answer(status_msg, self.strings("pref") + text)
+
+    # MANUAL RECOGNITION COMMANDS
+    @loader.owner
     async def vua(self, m: Message):
-        """<відп> - Розпізнати українською (Google)"""
-        await self._run_command(m, "google", "uk-UA")
+        """<відповідь> - Розпізнати українською (Google)"""
+        await self._handle_recognition_command(m, "google", "uk-UA")
 
+    @loader.owner
     async def vru(self, m: Message):
-        """<відп> - Розпізнати російською (Google)"""
-        await self._run_command(m, "google", "ru-RU")
+        """<відповідь> - Розпізнати російською (Google)"""
+        await self._handle_recognition_command(m, "google", "ru-RU")
 
+    @loader.owner
     async def ven(self, m: Message):
-        """<відп> - Розпізнати англійською (Google)"""
-        await self._run_command(m, "google", "en-US")
+        """<відповідь> - Розпізнати англійською (Google)"""
+        await self._handle_recognition_command(m, "google", "en-US")
 
+    @loader.owner
     async def vai(self, m: Message):
-        """<відп> - Розпізнати мовлення (Gemini AI)"""
-        await self._run_command(m, "gemini")
+        """<відповідь> - Розпізнати мовлення (Gemini AI)"""
+        await self._handle_recognition_command(m, "gemini")
 
+    @loader.owner
     async def wh(self, m: Message):
-        """<відп> - Розпізнати мовлення (Whisper)"""
-        await self._run_command(m, "whisper")
+        """<відповідь> - Розпізнати мовлення (Whisper)"""
+        await self._handle_recognition_command(m, "whisper")
 
-    # AUTO-TOGGLE COMMANDS
-    async def _toggle_auto(self, m: Message, engine: str, lang: str = None):
-        chat_id = str(utils.get_chat_id(m))
+    # AUTO RECOGNITION COMMANDS
+    async def _toggle_auto_recog(self, message: Message, engine: str, lang: str = None):
+        chat_id = str(utils.get_chat_id(message))
+        current = self._auto_recog_settings.get(chat_id)
         new = {"engine": engine, "lang": lang}
-
-        if self._auto_recog_settings.get(chat_id) == new:
+        
+        if current == new:
             self._auto_recog_settings.pop(chat_id)
             text = self.strings("auto_off")
         else:
-            if engine == "gemini" and not self.config["gemini_api_key"]:
-                return await utils.answer(m, self.strings("pref") + self.strings("gemini_token_missing"))
-            if engine == "whisper" and not self.config["whisper_api_key"]:
-                return await utils.answer(m, self.strings("pref") + self.strings("whisper_token_missing"))
+            if engine == "gemini":
+                if not GEMINI_AVAILABLE: return await utils.answer(message, self.strings("pref") + self.strings("gemini_lib_missing"))
+                if not self.config["gemini_api_key"]: return await utils.answer(message, self.strings("pref") + self.strings("gemini_token_missing"))
+            if engine == "whisper":
+                if not self.config["whisper_api_key"]: return await utils.answer(message, self.strings("pref") + self.strings("whisper_token_missing"))
             
             self._auto_recog_settings[chat_id] = new
             engine_map = {"google": self.strings("google_lang").format(lang), "gemini": self.strings("gemini"), "whisper": self.strings("whisper")}
             text = self.strings("auto_on").format(engine=engine_map[engine])
 
-        self.db.set(self.strings["name"], KEY_AUTO_RECOG, self._auto_recog_settings)
-        await utils.answer(m, self.strings("pref") + text)
+        self._save_auto_recog_settings()
+        await utils.answer(message, self.strings("pref") + text)
 
+    @loader.owner
     async def autoua(self, m: Message):
-        """Увімкнути/вимкнути авто-розпізнавання українською (Google)"""
-        await self._toggle_auto(m, "google", "uk-UA")
+        """Перемкнути авто-розпізнавання українською (Google)"""
+        await self._toggle_auto_recog(m, "google", "uk-UA")
 
+    @loader.owner
     async def autoru(self, m: Message):
-        """Увімкнути/вимкнути авто-розпізнавання російською (Google)"""
-        await self._toggle_auto(m, "google", "ru-RU")
+        """Перемкнути авто-розпізнавання російською (Google)"""
+        await self._toggle_auto_recog(m, "google", "ru-RU")
 
+    @loader.owner
     async def autoen(self, m: Message):
-        """Увімкнути/вимкнути авто-розпізнавання англійською (Google)"""
-        await self._toggle_auto(m, "google", "en-US")
+        """Перемкнути авто-розпізнавання англійською (Google)"""
+        await self._toggle_auto_recog(m, "google", "en-US")
 
+    @loader.owner
     async def autoai(self, m: Message):
-        """Увімкнути/вимкнути авто-розпізнавання (Gemini AI)"""
-        await self._toggle_auto(m, "gemini")
+        """Перемкнути авто-розпізнавання (Gemini AI)"""
+        await self._toggle_auto_recog(m, "gemini")
 
+    @loader.owner
     async def autowh(self, m: Message):
-        """Увімкнути/вимкнути авто-розпізнавання (Whisper)"""
-        await self._toggle_auto(m, "whisper")
-
-    # WATCHER
+        """Перемкнути авто-розпізнавання (Whisper)"""
+        await self._toggle_auto_recog(m, "whisper")
+    
+    # WATCHER FOR AUTO-RECOGNITION
     @loader.watcher(only_media=True, no_cmd=True)
     async def watcher(self, message: Message):
         chat_id = str(utils.get_chat_id(message))
         settings = self._auto_recog_settings.get(chat_id)
         if not settings or not isinstance(message, Message): return
-        if message.sender_id == self._me_id or message.sender_id in self.config["ignore_users"]: return
-        if not message.media or message.file.mime_type.split('/')[0] not in ['audio', 'video'] or getattr(message, 'gif', False): return
 
-        status = None
+        if message.sender_id == self._me_id or (message.sender_id in self.config["ignore_users"]): return
+        if not message.media or (message.file.mime_type.split('/')[0] not in ['audio', 'video']): return
+        if getattr(message, 'gif', False): return
+
+        status_msg = None
         try:
-            status = await message.reply(self.strings("pref") + self.strings("processing"))
-            text = await self._process_media(message, settings["engine"], settings["lang"], status)
-            if text: await status.edit(self.strings("pref") + self.strings("recognized").format(text))
-            else: await status.delete()
+            # For watcher, we send a reply, which will be edited with the result or an error (if not silent)
+            status_msg = await message.reply(self.strings("pref") + self.strings("processing"))
+            recognized_text = await self._process_media(message, settings["engine"], settings["lang"], status_msg)
+            
+            if recognized_text:
+                await status_msg.edit(self.strings("pref") + self.strings("recognized").format(recognized_text))
+            else:
+                await status_msg.delete() # If recognition is empty, delete the status message
+
         except Exception as e:
-            if status and not self.config["silent"]:
-                await status.edit(self.strings("pref") + await self._format_error(e, settings["engine"]))
-            elif status: await status.delete()
-
-    # GUIDES
-    async def geminiguide(self, m: Message):
+            logger.warning(f"AuthorVTT Watcher Error: {e}")
+            if status_msg and not self.config["silent"]:
+                # The _handle_recognition_command has similar logic we can reuse for error formatting
+                error_key = str(e)
+                source = settings['engine'].capitalize()
+                if settings['engine'] == 'whisper': source = "Whisper"
+                
+                text = self.strings("recognition_error")
+                if error_key in ["no_reply", "too_big", "audio_extract_error"] or "too_short" in error_key:
+                     text = self.strings(error_key.split('(')[0].strip()) if '(' in error_key else self.strings(error_key)
+                elif isinstance(e, (ConnectionError, TimeoutError, RuntimeError)):
+                    text = self.strings("api_error").format(source=source, error=error_key)
+                
+                await status_msg.edit(self.strings("pref") + text)
+            elif status_msg:
+                await status_msg.delete() # If silent mode, just delete the "processing" message
+    
+    # GUIDE COMMANDS
+    @loader.command()
+    async def geminiguide(self, message: Message):
         """Інструкція для отримання API ключа Gemini"""
-        await utils.answer(m, self.strings('gemini_instructions'))
+        await utils.answer(message, self.strings('gemini_instructions'))
 
-    async def whguide(self, m: Message):
-        """Інструкція для отримання API ключа для Whisper"""
-        await utils.answer(m, self.strings('whisper_instructions'))
+    @loader.command()
+    async def whguide(self, message: Message):
+        """Інструкція для отримання API ключа Hugging Face"""
+        await utils.answer(message, self.strings('whisper_instructions'))
