@@ -14,7 +14,7 @@ class AuthorChatPlusMod(loader.Module):
 		self.me = await client.get_me()
 	async def achelpcmd(self, message):
 		"""Show Info"""
-		await message.edit("""<code>This module is now available only to users of AuthorChe's userbot</code>
+		await message.edit("""<code>This module is now available only to users who send me Donate</code>
 """)
 
 
