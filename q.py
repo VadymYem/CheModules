@@ -1,10 +1,9 @@
-__version__ = (1, 2, 0)
+__version__ = (1, 2, 1)
 
 # Цей файл є частиною Hikka Userbot!
 # Модифіковано та українізовано для користувача.
-# Базується на модулі "SQuotes".
-
-# meta developer: @blazeftg
+# Базується на модулі "SQuotes" @yg_modules
+# meta developer: @blazeftg & @wsinfo
 # scope: hikka_only
 # scope: hikka_min 1.6.3
 
@@ -32,7 +31,6 @@ class QuoteUtils:
                 t = d.pop("_", "").replace("MessageEntity", "").lower()
                 if not t: continue
                 
-                # Маппінг сутностей, включаючи нові (blockquote, spoiler, custom_emoji)
                 mt = {
                     "bold": "bold", "italic": "italic", "underline": "underline", 
                     "strikethrough": "strikethrough", "code": "code", "pre": "pre", 
@@ -41,7 +39,7 @@ class QuoteUtils:
                     "mentionname": "text_mention", "hashtag": "hashtag", 
                     "cashtag": "cashtag", "botcommand": "bot_command", 
                     "spoiler": "spoiler", "customemoji": "custom_emoji",
-                    "blockquote": "blockquote" # Нова фіча ТГ
+                    "blockquote": "blockquote"
                 }.get(t, t)
                 
                 it = {"type": mt, "offset": d.get("offset", 0), "length": d.get("length", 0)}
@@ -62,7 +60,6 @@ class QuoteUtils:
 
     @staticmethod
     def desc(m: Message, rep: bool = False) -> str:
-        # Логіка визначення типу медіа переписана для читабельності
         if not rep:
             return ""
             
@@ -109,7 +106,6 @@ class QuoteUtils:
 
     @staticmethod
     def wf(b: Optional[bytes]) -> List[int]:
-        # Генерація хвильової форми для голосових (waveform)
         if not b: return []
         n = (len(b) * 8) // 5
         if not n: return []
@@ -250,12 +246,11 @@ class Quotes(loader.Module):
             if not rep:
                 return await utils.answer(m, self.strings["no_reply"])
             
+            # Відправляємо статус, але зберігаємо його об'єкт, щоб потім видалити
             st = await utils.answer(m, self.strings["processing"])
             doc = "!file" in args
             
-            # Пошук кількості повідомлень (число)
             n = next((int(a) for a in args if a.isdigit() and int(a) > 0), 1)
-            # Пошук кольору фону
             bg = next((a for a in args if a != "!file" and not a.isdigit()), self.config["bg_color"])
             
             if n > self.config["max_messages"]:
@@ -288,9 +283,16 @@ class Quotes(loader.Module):
 
             buf = io.BytesIO(r.content)
             buf.name = "Quote" + (".png" if doc else ".webp")
-            await utils.answer(st, buf, force_document=doc)
+            buf.seek(0) # Важливо для запобігання помилок читання
+            
+            # ВИПРАВЛЕННЯ: Видаляємо статус і надсилаємо нове повідомлення
+            await st.delete()
+            await utils.answer(m, buf, force_document=doc, reply_to=rep.id)
+            
         except Exception as e:
-            return await utils.answer(m, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
+            # Якщо st існує, спробуємо відредагувати його, щоб показати помилку
+            try: await utils.answer(st, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
+            except: await utils.answer(m, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
 
     async def fqcmd(self, m: Message):
         """
@@ -338,14 +340,19 @@ class Quotes(loader.Module):
 
             buf = io.BytesIO(r.content)
             buf.name = "Quote.webp"
-            await utils.answer(st, buf)
+            buf.seek(0)
+            
+            # ВИПРАВЛЕННЯ: Видаляємо статус і надсилаємо нове повідомлення
+            await st.delete()
+            await utils.answer(m, buf, reply_to=rep.id if rep else None)
+            
         except Exception as e:
-            return await utils.answer(m, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
+            try: await utils.answer(st, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
+            except: await utils.answer(m, f"<emoji document_id=5465665476714773728>⚠️</emoji> <b>Помилка:</b> {e}")
 
     async def parse(self, trg: Message, n: int) -> Optional[List[dict]]:
         try:
             rep = await trg.get_reply_message()
-            # Отримання списку повідомлень
             lst: List[Message] = [mm async for mm in self.client.iter_messages(
                 trg.chat_id, limit=n, reverse=True, add_offset=1, offset_id=rep.id if rep else None
             )]
@@ -415,7 +422,6 @@ class Quotes(loader.Module):
                 if med:
                     item["voice" if "voice" in med else "media"] = med.get("voice", med)
 
-                # Emoji Status (Premium badge)
                 es = getattr(u, "emoji_status", None)
                 if getattr(es, "document_id", None):
                     item["from"]["emoji_status"] = str(es.document_id)
