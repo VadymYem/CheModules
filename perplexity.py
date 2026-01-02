@@ -11,7 +11,7 @@ from .. import loader, utils
 @loader.tds
 class AskPlexMod(loader.Module):
     """
-    Безкоштовний модуль для взаємодії з @askplexbot,
+    Безкоштовний модуль для взаємодії з @CopilotOfficialBot,
     який коректно очікує на редагування повідомлення.
     Включає режим тригера з розширеними налаштуваннями.
     """
@@ -56,7 +56,7 @@ class AskPlexMod(loader.Module):
         self.client = client
         self.db = db
         self.me = await client.get_me()
-        self.gpt_free = "@askplexbot"
+        self.gpt_free = "@CopilotOfficialBot"
         self.last_request_time = {}
         self.request_cooldown = 5  # 5 секунд
 
