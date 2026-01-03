@@ -1,10 +1,12 @@
-__version__ = (1, 4, 0)
-
+__version__ = (1, 5, 0)
+#meta developer: @author_che
 import contextlib
 import io
 import logging
 import time
 import typing
+
+# Спроба імпорту типів для aiogram 3.x (використовується в Hikka)
 try:
     from aiogram.types import BufferedInputFile
 except ImportError:
@@ -27,9 +29,12 @@ logger = logging.getLogger(__name__)
 
 
 @loader.tds
-class Spy(loader.Module):
+class NekoSpy(loader.Module):
     """
     Зберігає видалені та відредаговані повідомлення.
+    Відправка ТІЛЬКИ через інлайн-бота для захисту акаунту від спамбану.
+    Виправлено помилку 'Event object has no attribute media'.
+    Покращено роботу зі стікерами.
     """
 
     strings = {
@@ -86,7 +91,7 @@ class Spy(loader.Module):
             "🔥 <b>Збереження самознищуваних медіа активне</b>\n"
         ),
         "cfg_save_sd": "Зберігати самознищувані фото/відео",
-        "bot_error": "\n\n⚠️ <i>Не вдалося відправити медіа через бота. Можливо, файл завеликий.</i>",
+        "bot_error": "\n\n⚠️ <i>Не вдалося відправити медіа через бота. Можливо, файл завеликий або пошкоджений.</i>",
     }
 
     strings_uk = strings
@@ -209,8 +214,8 @@ class Spy(loader.Module):
             "Архів видалених та змінених повідомлень (Spy)",
             silent=True,
             invite_bot=True,
-            avatar="https://authorche.top/poems/logo.jpg",
-            _folder="heroku",
+            avatar="https://img.icons8.com/color/480/spy.png",
+            _folder="hikka",
         )
 
         self._channel = int(f"-100{channel.id}")
@@ -328,6 +333,8 @@ class Spy(loader.Module):
 
         await utils.answer(message, info)
 
+    # --- Логіка відправки через БОТА ---
+
     async def _send_bot_text(self, caption):
         """Відправка ТЕКСТУ через БОТА"""
         try:
@@ -348,6 +355,7 @@ class Spy(loader.Module):
             file_io.seek(0)
             file_bytes = file_io.read()
             
+            # Підготовка файлу для aiogram
             if BufferedInputFile:
                 media_file = BufferedInputFile(file_bytes, filename=file_io.name)
             else:
@@ -360,31 +368,48 @@ class Spy(loader.Module):
                 await self.inline.bot.send_video(self._channel, video=media_file, caption=caption)
             elif type_hint == "voice":
                 await self.inline.bot.send_voice(self._channel, voice=media_file, caption=caption)
+            elif type_hint == "sticker":
+                # Стікери шлемо без підпису, бо send_sticker не приймає caption
+                await self.inline.bot.send_sticker(self._channel, sticker=media_file)
             else:
                 await self.inline.bot.send_document(self._channel, document=media_file, caption=caption)
         
         except Exception as e:
             logger.error(f"Bot media send error: {e}")
-            # Якщо не вдалося відправити медіа, відправляємо текст
             await self._send_bot_text(caption + self.strings("bot_error"))
 
 
     async def _message_deleted(self, msg_obj: Message, caption: str):
         caption = self.inline.sanitise_text(caption)
 
-        # 1. Текстове повідомлення
+        # 1. Стікери - особлива логіка
+        if msg_obj.sticker:
+            # Спочатку текст з емодзі стікера
+            sticker_emoji = msg_obj.file.emoji if msg_obj.file.emoji else "🗿"
+            text_update = f"{caption}\n\n[Стікер {sticker_emoji}]"
+            self._queue.append(lambda: self._send_bot_text(text_update))
+
+            # Потім сам стікер окремим повідомленням
+            async def _async_sticker_sender():
+                try:
+                    data = await self._client.download_media(msg_obj, bytes)
+                    file = io.BytesIO(data)
+                    file.name = "sticker.webp" # Стандарт для статичних
+                    # Для анімованих/відео можна додати перевірку атрибутів, але бот зазвичай розуміє сам
+                    
+                    await self._send_bot_media("", file, "sticker")
+                except Exception as e:
+                    pass # Якщо стікер не вантажиться, просто ігноруємо, текст вже пішов
+
+            self._queue.append(_async_sticker_sender)
+            return
+
+        # 2. Тільки текст (якщо немає медіа або є веб-сторінка)
         if not msg_obj.media or (hasattr(msg_obj.media, "webpage") and msg_obj.media.webpage):
             self._queue.append(lambda: self._send_bot_text(caption))
             return
 
-        # 2. Стікер
-        if msg_obj.sticker:
-            sticker_emoji = msg_obj.file.emoji if msg_obj.file.emoji else "🗿"
-            text_update = f"{caption}\n\n[Стікер {sticker_emoji}]"
-            self._queue.append(lambda: self._send_bot_text(text_update))
-            return
-
-        # 3. Медіа файли - завантажуємо клієнтом, відправляємо ботом
+        # 3. Інші медіа файли
         async def _async_media_sender():
             try:
                 data = await self._client.download_media(msg_obj, bytes)
@@ -667,6 +692,10 @@ class Spy(loader.Module):
     async def watcher(self, message: Message):
         """Watcher for SD media and caching messages"""
         
+        # FIX: Перевірка типу повідомлення для уникнення AttributeError
+        if not isinstance(message, Message):
+            return
+
         # --- Save SD ---
         if self.config["save_sd"] and message.media:
             is_sd = False
@@ -697,7 +726,6 @@ class Spy(loader.Module):
                             utils.escape_html(get_display_name(sender)),
                         )
                         
-                        # Відправляємо ботом
                         await self._send_bot_media(caption, file, type_hint)
                     except Exception as e:
                         logger.error(f"Failed to capture SD media: {e}")
