@@ -11,13 +11,11 @@ from .. import loader, utils
 @loader.tds
 class AskPlexMod(loader.Module):
     """
-    Безкоштовний модуль для взаємодії з @CopilotOfficialBot,
-    який коректно очікує на редагування повідомлення.
-    Включає режим тригера з розширеними налаштуваннями.
+    Безкоштовний модуль для взаємодії з @gigachat_bot.
     """
 
     strings = {
-        "name": "AskPlexAI",
+        "name": "AskAI",
         "loading": "🔄 <b>Запитую AuthorAi...</b>",
         "no_args": "🚫 <b>Ви не ввели запит.</b>\nНапишіть <code>.а &lt;текст&gt;</code>",
         "start_text": "<b>🤖 AuthorAi:</b>\n",
@@ -56,7 +54,7 @@ class AskPlexMod(loader.Module):
         self.client = client
         self.db = db
         self.me = await client.get_me()
-        self.gpt_free = "@CopilotOfficialBot"
+        self.gpt_free = "@gigachat_bot"
         self.last_request_time = {}
         self.request_cooldown = 5  # 5 секунд
 
