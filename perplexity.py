@@ -80,7 +80,7 @@ class AskPlexMod(loader.Module):
             msg_to_bot = await conv.send_message(text)
             response = await conv.get_response()
 
-            if "Міркую... ⏳" in response.text or "Thinking... ⏳" in response.text:
+            if "Запрос принят" in response.text or "Thinking... ⏳" in response.text:
                 try:
                     edited_event = await conv.wait_event(
                         events.MessageEdited(
