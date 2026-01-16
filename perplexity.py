@@ -54,7 +54,7 @@ class AskPlexMod(loader.Module):
         self.client = client
         self.db = db
         self.me = await client.get_me()
-        self.gpt_free = "@gigachat_bot"
+        self.gpt_free = "@mira"
         self.last_request_time = {}
         self.request_cooldown = 5  # 5 секунд
 
@@ -80,7 +80,7 @@ class AskPlexMod(loader.Module):
             msg_to_bot = await conv.send_message(text)
             response = await conv.get_response()
 
-            if "Запрос принят" in response.text or "Thinking... ⏳" in response.text:
+            if "💭" in response.text or "Thinking... ⏳" in response.text:
                 try:
                     edited_event = await conv.wait_event(
                         events.MessageEdited(
