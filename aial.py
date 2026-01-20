@@ -1,28 +1,30 @@
 # meta developer: @blazeftg / @wsinfo
-# meta version: 1.2.7
+# meta version: 1.2.8
 # meta hikka: *
 
 import asyncio
 import time
 from telethon import events
 from telethon.tl.types import Message
+from telethon.errors.common import AlreadyInConversationError
 from .. import loader, utils
 
 @loader.tds
 class AskPlexMod(loader.Module):
     """
     Модуль для взаємодії з AI ботом (ID: 6218783903).
-    Автоматичний рестарт при некоректній відповіді.
+    Автоматичний рестарт та черга запитів.
     """
 
     strings = {
         "name": "AskAI",
-        "loading": "🔄 <b>Запитую AuthorAi...</b>",
+        "loading": "🔄 <b>Запитую AuthorAi...</b>\n<i>(Ви в черзі, зачекайте)</i>",
         "restarting": "⚠️ <b>Відповідь некоректна або тайм-аут. Перезапускаю бота...</b>",
         "no_args": "🚫 <b>Ви не ввели запит.</b>\nНапишіть <code>.а &lt;текст&gt;</code>",
         "start_text": "<b>🤖 AuthorAi:</b>\n",
         "context_text": "✅ <b>Діалог з AuthorAi скинуто.</b>",
-        "timeout_error": "⏳ <b>AuthorAi не відповів належним чином після перезапуску.</b>",
+        "timeout_error": "⏳ <b>AuthorAi не відповів належним чином.</b>",
+        "busy_error": "🚦 <b>Бот зараз зайнятий іншим запитом. Спробуйте через декілька секунд.</b>",
         "trigger_prefix": "ас ",
         "mode_on": "✅ <b>Режим тригера увімкнено.</b>",
         "mode_off": "ℹ️ <b>Режим тригера вимкнено.</b>",
@@ -55,10 +57,11 @@ class AskPlexMod(loader.Module):
         self.client = client
         self.db = db
         self.me = await client.get_me()
-        # ID бота, якого вказав юзер
         self.bot_id = 6218783903
         self.last_request_time = {}
         self.request_cooldown = 3
+        # Створюємо замок для черги запитів
+        self.conv_lock = asyncio.Lock()
 
     async def _check_rate_limit(self, user_id: int) -> float or None:
         current_time = time.time()
@@ -69,77 +72,77 @@ class AskPlexMod(loader.Module):
         return None
 
     def _validate_response(self, text: str) -> bool:
-        """Перевіряє, чи містить відповідь ключові маркери формату"""
         required_keywords = ["Причина:", "Тривалість:", "Рівень загрози:"]
-        # Перевіряємо, чи є хоча б 2 з 3 ключових фраз, щоб уникнути помилок через дрібні зміни
         matches = sum(1 for keyword in required_keywords if keyword in text)
         return matches >= 2
 
     async def message_q(self, text: str, user_id: int, message_to_edit=None):
-        """Логіка: Запит -> Чекаємо 15с -> Перевірка -> (Якщо погано: /restart -> Запит)"""
-        async with self.client.conversation(user_id, timeout=125) as conv:
-            # === СПРОБА 1 ===
+        """
+        Відправляє повідомлення з використанням Lock, щоб уникнути AlreadyInConversationError
+        """
+        # Блокуємо доступ, щоб інші запити чекали завершення цього
+        async with self.conv_lock:
             try:
-                await conv.send_message(text)
-                
-                # Чекаємо відповідь максимум 15 секунд для перевірки "швидкої та правильної" реакції
-                try:
-                    response = await conv.get_response(timeout=15)
+                async with self.client.conversation(user_id, timeout=125) as conv:
+                    # === СПРОБА 1 ===
+                    try:
+                        await conv.send_message(text)
+                        
+                        try:
+                            response = await conv.get_response(timeout=15)
+                            
+                            if "Thinking" in response.text or "Запрос принят" in response.text:
+                                response = await conv.wait_event(
+                                    events.MessageEdited(chats=user_id, func=lambda e: e.id == response.id),
+                                    timeout=15
+                                )
+                                if isinstance(response, events.MessageEdited.Event):
+                                    response = response.message
+
+                            if not self._validate_response(response.text):
+                                raise ValueError("Invalid format")
+                            
+                            await conv.mark_read()
+                            return response
+
+                        except (asyncio.TimeoutError, ValueError):
+                            pass
+
+                    except Exception:
+                        pass
+
+                    # === ЛОГІКА RESTART ===
+                    if message_to_edit:
+                        await utils.answer(message_to_edit, self.strings["restarting"])
                     
-                    # Якщо бот каже "Thinking...", чекаємо редагування, але в межах тих самих 15с (сумарно)
-                    if "Thinking" in response.text or "Запрос принят" in response.text:
-                         response = await conv.wait_event(
-                            events.MessageEdited(chats=user_id, func=lambda e: e.id == response.id),
-                            timeout=15
-                        )
-                        # Отримуємо об'єкт повідомлення з події
-                         if isinstance(response, events.MessageEdited.Event):
-                             response = response.message
-
-                    # ВАЛІДАЦІЯ
-                    if not self._validate_response(response.text):
-                        raise ValueError("Invalid format")
+                    await conv.send_message("/restart")
+                    await asyncio.sleep(2) 
                     
-                    # Якщо все ок - повертаємо відповідь
-                    await conv.mark_read()
-                    return response
+                    await conv.send_message(text)
 
-                except (asyncio.TimeoutError, ValueError):
-                    # Якщо тайм-аут 15с або формат невірний - йдемо в блок except
-                    pass
-
+                    try:
+                        response = await conv.get_response(timeout=60)
+                        
+                        if "Thinking" in response.text or "Запрос принят" in response.text:
+                            response = await conv.wait_event(
+                                events.MessageEdited(chats=user_id, func=lambda e: e.id == response.id),
+                                timeout=60
+                            )
+                            if isinstance(response, events.MessageEdited.Event):
+                                response = response.message
+                        
+                        await conv.mark_read()
+                        return response
+                    except asyncio.TimeoutError:
+                        return "TIMEOUT"
+            
+            except AlreadyInConversationError:
+                # Це трапиться тільки якщо Lock не спрацював або щось забагувало в самому Telethon
+                return "BUSY"
             except Exception as e:
-                # Ловимо помилки відправки першого повідомлення
-                pass
-
-            # === ЛОГІКА RESTART (Якщо перша спроба не вдалася) ===
-            if message_to_edit:
-                await utils.answer(message_to_edit, self.strings["restarting"])
-            
-            # 1. Шлемо /restart
-            await conv.send_message("/restart")
-            # 2. Чекаємо трохи, поки бот "очухається"
-            await asyncio.sleep(2) 
-            
-            # 3. Шлемо запит знову
-            await conv.send_message(text)
-
-            # 4. Чекаємо відповідь (тепер даємо більше часу, бо це вже "надійна" спроба)
-            try:
-                response = await conv.get_response(timeout=60)
-                
-                if "Thinking" in response.text or "Запрос принят" in response.text:
-                    response = await conv.wait_event(
-                        events.MessageEdited(chats=user_id, func=lambda e: e.id == response.id),
-                        timeout=60
-                    )
-                    if isinstance(response, events.MessageEdited.Event):
-                        response = response.message
-                
-                await conv.mark_read()
-                return response
-            except asyncio.TimeoutError:
-                return "TIMEOUT"
+                if message_to_edit:
+                    await utils.answer(message_to_edit, f"Error inside Q: {e}")
+                return None
 
     async def аcmd(self, message: Message):
         """{text} - обробити текст через AuthorAi"""
@@ -153,10 +156,11 @@ class AskPlexMod(loader.Module):
             
         processing_msg = await utils.answer(message, self.strings["loading"])
 
-        # Викликаємо з новим ID
         response = await self.message_q(args, self.bot_id, message_to_edit=processing_msg)
 
-        if response == "TIMEOUT" or response is None:
+        if response == "BUSY":
+             text = self.strings["busy_error"]
+        elif response == "TIMEOUT" or response is None:
             text = self.strings["timeout_error"]
         elif hasattr(response, 'text'):
             text = self.strings["start_text"] + response.text.replace("Perplexity", "AuthorAi")
@@ -172,9 +176,11 @@ class AskPlexMod(loader.Module):
 
     async def ааcmd(self, message: Message):
         """- скинути діалог"""
-        async with self.client.conversation(self.bot_id) as conv:
-            await conv.send_message("/restart") # Для цього бота краще restart, ніж newchat
-            await conv.mark_read()
+        # Також використовуємо Lock для рестарту
+        async with self.conv_lock:
+            async with self.client.conversation(self.bot_id) as conv:
+                await conv.send_message("/restart")
+                await conv.mark_read()
         await utils.answer(message, self.strings["context_text"])
 
     async def askmecmd(self, message: Message):
@@ -206,7 +212,10 @@ class AskPlexMod(loader.Module):
             
         query_text = message.text[len(self.strings["trigger_prefix"]):].strip()
         if not query_text: return
-            
+        
+        # Тут ми не ставимо answer("Loading"), щоб не спамити в чат, 
+        # але функція message_q все одно змусить чекати в черзі.
+        
         response = await self.message_q(query_text, self.bot_id)
         
         if hasattr(response, 'text') and response.text:
